@@ -2,7 +2,7 @@
 | :---- | :------ | :---- |
 [![Windows build status][1]][2] | [![Linux build status][3]][4] | [![OS X build status][5]][6] | 
 
-[1]: https://ci.appveyor.com/api/projects/status/451tv98n7xvxm5ol/branch/master?svg=true
+[1]: https://ci.appveyor.com/api/projects/status/p2yp15nc1w0a3r93/branch/master?svg=true
 [2]: https://ci.appveyor.com/project/x42/X42-FullNode
 [3]: https://travis-ci.org/x42project/X42-FullNode.svg?branch=master
 [4]: https://travis-ci.org/x42project/X42-FullNode
