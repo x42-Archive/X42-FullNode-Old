@@ -3,18 +3,17 @@
 [![Windows build status][1]][2] | [![Linux build status][3]][4] | [![OS X build status][5]][6] | 
 
 [1]: https://ci.appveyor.com/api/projects/status/451tv98n7xvxm5ol/branch/master?svg=true
-[2]: https://ci.appveyor.com/project/x42/x42bitcoinfullnode
-[3]: https://travis-ci.org/x42project/x42BitcoinFullNode.svg?branch=master
-[4]: https://travis-ci.org/x42project/x42BitcoinFullNode
-[5]: https://travis-ci.org/x42project/x42BitcoinFullNode.svg?branch=master
-[6]: https://travis-ci.org/x42project/x42BitcoinFullNode
+[2]: https://ci.appveyor.com/project/x42/X42-FullNode
+[3]: https://travis-ci.org/x42project/X42-FullNode.svg?branch=master
+[4]: https://travis-ci.org/x42project/X42-FullNode
+[5]: https://travis-ci.org/x42project/X42-FullNode.svg?branch=master
+[6]: https://travis-ci.org/x42project/X42-FullNode
 
 
-x42 Bitcoin
+x42
 ===============
 
-https://x42platform.com
-
+http://www.x42.tech
 Bitcoin Implementation in C#
 ----------------------------
 
