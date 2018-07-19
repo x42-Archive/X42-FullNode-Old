@@ -4,10 +4,10 @@
 
 [1]: https://ci.appveyor.com/api/projects/status/p2yp15nc1w0a3r93/branch/master?svg=true
 [2]: https://ci.appveyor.com/project/x42/X42-FullNode
-[3]: https://travis-ci.org/x42project/X42-FullNode.svg?branch=master
-[4]: https://travis-ci.org/x42project/X42-FullNode
-[5]: https://travis-ci.org/x42project/X42-FullNode.svg?branch=master
-[6]: https://travis-ci.org/x42project/X42-FullNode
+[3]: https://travis-ci.org/x42protocol/X42-FullNode.svg?branch=master
+[4]: https://travis-ci.org/x42protocol/X42-FullNode
+[5]: https://travis-ci.org/x42protocol/X42-FullNode.svg?branch=master
+[6]: https://travis-ci.org/x42protocol/X42-FullNode
 
 
 x42
