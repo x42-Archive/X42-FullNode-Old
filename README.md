@@ -14,17 +14,16 @@ x42
 ===============
 
 http://www.x42.tech
-Bitcoin Implementation in C#
+A blockchain for entrepreneurs
 ----------------------------
 
 x42 is an implementation of the Bitcoin protocol in C# on the [.NET Core](https://dotnet.github.io/) platform.  
 The node can run on the Bitcoin and x42 networks.  
 x42 Bitcoin is based on the [NBitcoin](https://github.com/MetacoSA/NBitcoin) project.  
-
-For Proof of Stake support on the x42 token the node is using [Nx42](https://github.com/x42project/Nx42) which is a POS implementation of NBitcoin.  
+ 
 
 [.NET Core](https://dotnet.github.io/) is an open source cross platform framework and enables the development of applications and services on Windows, macOS and Linux.  
-Join our community on [slack](https://x42platform.slack.com).  
+Join our community on [discord](https://discord.gg/tdN4ue6).  
 
 The design
 ----------
