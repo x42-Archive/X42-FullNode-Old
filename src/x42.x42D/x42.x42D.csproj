@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <AssemblyName>x42D</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>x42</PackageId>
+    <PackageId>x42D</PackageId>
     <RuntimeFrameworkVersion>2.1.1</RuntimeFrameworkVersion>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <Authors>x42</Authors>
   </PropertyGroup>
 
   <ItemGroup>
