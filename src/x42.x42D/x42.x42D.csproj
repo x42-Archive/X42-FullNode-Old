@@ -18,6 +18,7 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <Authors>x42</Authors>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
