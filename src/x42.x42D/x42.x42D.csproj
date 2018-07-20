@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AssemblyName>x42D</AssemblyName>
+    <AssemblyName>X42.X42D</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>x42D</PackageId>
+    <PackageId>X42.X42D</PackageId>
     <RuntimeFrameworkVersion>2.1.1</RuntimeFrameworkVersion>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
