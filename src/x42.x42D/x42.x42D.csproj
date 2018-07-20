@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AssemblyName>x42</AssemblyName>
+    <AssemblyName>x42D</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>x42</PackageId>
     <RuntimeFrameworkVersion>2.1.1</RuntimeFrameworkVersion>
