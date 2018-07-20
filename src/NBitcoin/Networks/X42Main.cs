@@ -34,7 +34,7 @@ namespace NBitcoin.Networks
             messageStart[3] = 0x05;
             uint magic = BitConverter.ToUInt32(messageStart, 0); //0x5223570; 
 
-            this.Name = "X42Main";
+            this.Name = "x42Main";
             this.Magic = magic;
             this.DefaultPort = 52342;
             this.RPCPort = 52343;
@@ -45,7 +45,7 @@ namespace NBitcoin.Networks
             this.RootFolderName = x42RootFolderName;
             this.DefaultConfigFilename = x42DefaultConfigFilename;
             this.MaxTimeOffsetSeconds = 25 * 60;
-            this.CoinTicker = "X42";
+            this.CoinTicker = "x42";
 
             this.Consensus.SubsidyHalvingInterval = 210000;
             this.Consensus.MajorityEnforceBlockUpgrade = 750;

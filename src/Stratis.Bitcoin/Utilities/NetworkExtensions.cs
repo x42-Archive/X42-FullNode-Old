@@ -39,5 +39,15 @@ namespace Stratis.Bitcoin.Utilities
         {
             return !network.Name.ToLowerInvariant().Contains("stratis");
         }
+
+        /// <summary>
+        /// Determines whether this network is a x42 network.
+        /// </summary>
+        /// <param name="network">The network.</param>
+        /// <returns><c>true</c> if the specified network is x42, <c>false</c> otherwise.</returns>
+        public static bool IsX42(this Network network)
+        {
+            return network.Name.ToLowerInvariant().Contains("x42");
+        }
     }
 }
