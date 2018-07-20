@@ -10,7 +10,7 @@
         /// <summary>
         /// x42 Protocol version.
         /// </summary>
-        X42_PROTOCOL_VERSION = 42000,
+        X42_PROTOCOL_VERSION = 420000,
 
         /// <summary>
         /// Initial protocol version, to be increased after version/verack negotiation.
