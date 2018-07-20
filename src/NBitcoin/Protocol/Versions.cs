@@ -5,7 +5,7 @@
     /// </summary>
     public enum ProtocolVersion : uint
     {
-        PROTOCOL_VERSION = 70012,
+        PROTOCOL_VERSION = 420012,
 
         /// <summary>
         /// x42 Protocol version.

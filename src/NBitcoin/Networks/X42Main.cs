@@ -96,11 +96,11 @@ namespace NBitcoin.Networks
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
             this.DNSSeeds = new List<DNSSeedData>
             {
-                new DNSSeedData("test.x42.tech", "test.x42.tech"),
+                //new DNSSeedData("test.x42.tech", "test.x42.tech"),
                 new DNSSeedData("test2.x42.tech", "test2.x42.tech")
             };
 
-            string[] seedNodes = { "192.30.253.112", "172.217.12.78" };
+            string[] seedNodes = { "192.168.0.2", "192.168.0.1" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
                        
             // Create the genesis block.
