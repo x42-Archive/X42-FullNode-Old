@@ -2,30 +2,28 @@
 | :---- | :------ | :---- |
 [![Windows build status][1]][2] | [![Linux build status][3]][4] | [![OS X build status][5]][6] | 
 
-[1]: https://ci.appveyor.com/api/projects/status/451tv98n7xvxm5ol/branch/master?svg=true
-[2]: https://ci.appveyor.com/project/x42/x42bitcoinfullnode
-[3]: https://travis-ci.org/x42project/x42BitcoinFullNode.svg?branch=master
-[4]: https://travis-ci.org/x42project/x42BitcoinFullNode
-[5]: https://travis-ci.org/x42project/x42BitcoinFullNode.svg?branch=master
-[6]: https://travis-ci.org/x42project/x42BitcoinFullNode
+[1]: https://ci.appveyor.com/api/projects/status/p2yp15nc1w0a3r93/branch/master?svg=true
+[2]: https://ci.appveyor.com/project/x42/X42-FullNode
+[3]: https://travis-ci.org/x42protocol/X42-FullNode.svg?branch=master
+[4]: https://travis-ci.org/x42protocol/X42-FullNode
+[5]: https://travis-ci.org/x42protocol/X42-FullNode.svg?branch=master
+[6]: https://travis-ci.org/x42protocol/X42-FullNode
 
 
-x42 Bitcoin
+x42
 ===============
 
-https://x42platform.com
-
-Bitcoin Implementation in C#
+http://www.x42.tech
+A blockchain for entrepreneurs
 ----------------------------
 
 x42 is an implementation of the Bitcoin protocol in C# on the [.NET Core](https://dotnet.github.io/) platform.  
 The node can run on the Bitcoin and x42 networks.  
 x42 Bitcoin is based on the [NBitcoin](https://github.com/MetacoSA/NBitcoin) project.  
-
-For Proof of Stake support on the x42 token the node is using [Nx42](https://github.com/x42project/Nx42) which is a POS implementation of NBitcoin.  
+ 
 
 [.NET Core](https://dotnet.github.io/) is an open source cross platform framework and enables the development of applications and services on Windows, macOS and Linux.  
-Join our community on [slack](https://x42platform.slack.com).  
+Join our community on [discord](https://discord.gg/tdN4ue6).  
 
 The design
 ----------
