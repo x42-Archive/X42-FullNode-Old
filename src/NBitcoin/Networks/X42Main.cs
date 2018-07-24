@@ -55,7 +55,7 @@ namespace NBitcoin.Networks
             this.Consensus.BuriedDeployments[BuriedDeployments.BIP65] = 0;
             this.Consensus.BuriedDeployments[BuriedDeployments.BIP66] = 0;
             this.Consensus.BIP34Hash = new uint256("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8");
-            this.Consensus.PowLimit = new Target(new uint256("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+            this.Consensus.PowLimit = new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
             this.Consensus.PowTargetTimespan = TimeSpan.FromSeconds(14 * 24 * 60 * 60); // two weeks
             this.Consensus.PowTargetSpacing = TimeSpan.FromSeconds(10 * 60);
             this.Consensus.PowAllowMinDifficultyBlocks = false;
@@ -112,13 +112,13 @@ namespace NBitcoin.Networks
 
             this.Genesis = CreateX42GenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
             this.Consensus.HashGenesisBlock = this.Genesis.GetHash();
-            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x896a04755a27e4765234c21bb92889396b29bc17892713dd60a28fed5f3e89ee"));
-            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0x4468909b6f805dc4b15586463b74df01615d76ea4ba1a3a776d8960ef321f600"));
+            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x485f7949193775eafe7e5900358c1243b4b92a6371b60ffd1bea85b33d06020c"));
+            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0xc0cf900124c1287309f04c54e0aa125e542b61b2ac253017e920a01369b9e28b"));
         }
 
         protected static Block CreateX42GenesisBlock(ConsensusFactory consensusFactory, uint nTime, uint nNonce, uint nBits, int nVersion, Money genesisReward)
         {
-            string pszTimestamp = "Some people trapped in ‘modern slavery’ are underworked – and they pay a heavy price for it - http://theconversation.com/some-people-trapped-in-modern-slavery-are-underworked-and-they-pay-a-heavy-price-for-it-99863 | popó & lita - 6F3582CC2B720980C936D95A2E07F809";
+            string pszTimestamp = "For US, ‘Modern-Day Slavery Is a Feature of the Current Immigration Regime’ - https://sputniknews.com/analysis/201807241066627624-modern-day-slavery-feature-immigration-regime/ | popó & lita - 6F3582CC2B720980C936D95A2E07F809";
 
             Transaction txNew = consensusFactory.CreateTransaction();
             txNew.Version = 1;
