@@ -68,7 +68,7 @@ namespace NBitcoin.Networks
             this.Consensus.ProofOfStakeLimitV2 = new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false));
             this.Consensus.CoinType = 424242;
             this.Consensus.DefaultAssumeValid = null; //new uint256("0x6b86db75dfc2c36cbb104f5daaf37cf0a5252505a0d178aaab91a2513c08db0a"); // 795970
-            this.Consensus.CoinbaseMaturity = 1;
+            this.Consensus.CoinbaseMaturity = 50;
             this.Consensus.PremineReward = Money.Coins(10.5m * 1000000);
             this.Consensus.PremineHeight = 2;
             this.Consensus.ProofOfWorkReward = Money.Zero;
