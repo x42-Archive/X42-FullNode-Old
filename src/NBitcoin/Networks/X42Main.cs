@@ -68,7 +68,7 @@ namespace NBitcoin.Networks
             this.Consensus.ProofOfStakeLimitV2 = new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false));
             this.Consensus.CoinType = 424242;
             this.Consensus.DefaultAssumeValid = null; //new uint256("0x6b86db75dfc2c36cbb104f5daaf37cf0a5252505a0d178aaab91a2513c08db0a"); // 795970
-            this.Consensus.CoinbaseMaturity = 100;
+            this.Consensus.CoinbaseMaturity = 1;
             this.Consensus.PremineReward = Money.Coins(10.5m * 1000000);
             this.Consensus.PremineHeight = 2;
             this.Consensus.ProofOfWorkReward = Money.Zero;
@@ -104,7 +104,7 @@ namespace NBitcoin.Networks
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
                        
             // Create the genesis block.
-            this.GenesisTime = 1470467000;
+            this.GenesisTime = 1532442070;
             this.GenesisNonce = 246101626;
             this.GenesisBits = this.Consensus.PowLimit;
             this.GenesisVersion = 1;
@@ -112,8 +112,8 @@ namespace NBitcoin.Networks
 
             this.Genesis = CreateX42GenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
             this.Consensus.HashGenesisBlock = this.Genesis.GetHash();
-            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x485f7949193775eafe7e5900358c1243b4b92a6371b60ffd1bea85b33d06020c"));
-            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0xc0cf900124c1287309f04c54e0aa125e542b61b2ac253017e920a01369b9e28b"));
+            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x24969e47f14f5ce9d3a81f00fa6b56011359fb5fa799f55eb854fd78264d760c"));
+            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0x57a7f84ec1a6d77623d143cd72b78c33eb3c93eab40a8fa1d87aca41a031b448"));
         }
 
         protected static Block CreateX42GenesisBlock(ConsensusFactory consensusFactory, uint nTime, uint nNonce, uint nBits, int nVersion, Money genesisReward)
