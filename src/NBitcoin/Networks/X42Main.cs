@@ -76,7 +76,7 @@ namespace NBitcoin.Networks
             this.Consensus.ProofOfStakeRewardAfterSubsidyLimit = Money.Coins(5);
             this.Consensus.MaxReorgLength = 500;
             this.Consensus.MaxMoney = Money.Coins(42 * 1000000);
-            this.Consensus.SubsidyLimit = 1750;
+            this.Consensus.SubsidyLimit = 1680;
             
             this.Base58Prefixes = new byte[12][];
             this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { (75) };
