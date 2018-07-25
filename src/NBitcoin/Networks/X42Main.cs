@@ -76,9 +76,8 @@ namespace NBitcoin.Networks
             this.Consensus.ProofOfStakeRewardAfterSubsidyLimit = Money.Coins(5);
             this.Consensus.MaxReorgLength = 500;
             this.Consensus.MaxMoney = Money.Coins(42 * 1000000);
-            this.Consensus.SubsidyLimit = 550000;
-
-
+            this.Consensus.SubsidyLimit = 1750;
+            
             this.Base58Prefixes = new byte[12][];
             this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { (75) };
             this.Base58Prefixes[(int)Base58Type.SCRIPT_ADDRESS] = new byte[] { (125) };
@@ -100,7 +99,7 @@ namespace NBitcoin.Networks
                 new DNSSeedData("test2.x42.tech", "test2.x42.tech")
             };
 
-            string[] seedNodes = { "192.168.0.2", "192.168.0.1" };
+            string[] seedNodes = { "67.214.249.184", "192.168.0.1" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
                        
             // Create the genesis block.

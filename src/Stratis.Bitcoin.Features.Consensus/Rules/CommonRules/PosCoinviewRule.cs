@@ -70,6 +70,11 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 Money stakeReward = block.Transactions[1].TotalOut - posRuleContext.TotalCoinStakeValueIn;
                 Money calcStakeReward = fees + this.GetProofOfStakeReward(height);
 
+                if (height == this.consensus.SubsidyLimit)
+                {
+                    stakeReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
+                }
+
                 this.Logger.LogTrace("Block stake reward is {0}, calculated reward is {1}.", stakeReward, calcStakeReward);
                 if (stakeReward > calcStakeReward)
                 {
@@ -220,7 +225,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 return this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
             }
 
-            return this.consensus.ProofOfStakeReward;
+            return Money.Coins(42000);
         }
     }
 }
