@@ -225,7 +225,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 return this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
             }
 
-            return Money.Coins(42000);
+            return this.consensus.ProofOfStakeReward;
         }
     }
 }
