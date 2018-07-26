@@ -215,17 +215,22 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// <returns>Miner's coin stake reward.</returns>
         public Money GetProofOfStakeReward(int height)
         {
+            if (this.IsPastLastPOWBlock(height))
+            {
+                this.Logger.LogTrace("-= PoS =-");
+            }
+
             if (this.IsPremine(height))
             {
                 return this.consensus.PremineReward;
             }
-
+            
             if (this.IsSubsidyLimitReached(height))
             {
                 return this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
             }
 
-            if (this.IsPastLastPOWBlock(height) && this.IsBeforeEndOfProofOfStakeReward(height))
+            if (this.IsBeforeEndOfProofOfStakeReward(height))
             {
                 return this.consensus.ProofOfStakeReward;
             }
