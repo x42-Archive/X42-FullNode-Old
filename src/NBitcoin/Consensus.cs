@@ -67,6 +67,11 @@ namespace NBitcoin
         /// </summary>
         public long MaxMoney { get; set; }
 
+        /// <summary>
+        /// When to stop the rewards for PoS.
+        /// </summary>
+        public Money LastProofOfStakeRewardHeight { get; set; }
+
         public ConsensusOptions Options { get; set; }
 
         public class BuriedDeploymentsArray

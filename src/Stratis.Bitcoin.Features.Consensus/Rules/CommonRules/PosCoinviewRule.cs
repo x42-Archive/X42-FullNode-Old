@@ -220,12 +220,17 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 return this.consensus.PremineReward;
             }
 
-            if (this.IsPastSubsidyLimit(height))
+            if (this.IsSubsidyLimitReached(height))
             {
                 return this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
             }
 
-            return this.consensus.ProofOfStakeReward;
+            if (this.IsPastLastPOWBlock(height) && this.IsBeforeEndOfProofOfStakeReward(height))
+            {
+                return this.consensus.ProofOfStakeReward;
+            }
+
+            return Money.Zero;
         }
     }
 }

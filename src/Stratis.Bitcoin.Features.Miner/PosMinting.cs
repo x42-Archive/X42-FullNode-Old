@@ -792,7 +792,7 @@ namespace Stratis.Bitcoin.Features.Miner
                 // If this can happen over time then this check could be done much sooner
                 // to avoid a lot of computation.
                 this.logger.LogTrace("(-)[NO_REWARD]:false");
-                return false;
+                //return false;
             }
 
             // Split stake if above threshold.

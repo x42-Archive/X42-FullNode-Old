@@ -444,11 +444,35 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// </summary>
         /// <param name="height">Block's height.</param>
         /// <returns><c>true</c> if the block with provided height is past the Subsidy Limit, <c>false</c> otherwise.</returns>
-        protected bool IsPastSubsidyLimit(int height)
+        protected bool IsSubsidyLimitReached(int height)
         {
             return (this.Consensus.SubsidyLimit > 0) &&
                    (this.Consensus.SubsidyLimit > 0) &&
-                   (height > this.Consensus.SubsidyLimit);
+                   (height >= this.Consensus.SubsidyLimit);
+        }
+
+        /// <summary>
+        /// Determines whether the block with specified height is past the Subsidy Limit.
+        /// </summary>
+        /// <param name="height">Block's height.</param>
+        /// <returns><c>true</c> if the block with provided height is past the Subsidy Limit, <c>false</c> otherwise.</returns>
+        protected bool IsPastLastPOWBlock(int height)
+        {
+            return (this.Consensus.LastPOWBlock > 0) &&
+                   (this.Consensus.LastPOWBlock > 0) &&
+                   (height > this.Consensus.LastPOWBlock);
+        }
+
+        /// <summary>
+        /// Determines whether the block with specified height is past the Subsidy Limit.
+        /// </summary>
+        /// <param name="height">Block's height.</param>
+        /// <returns><c>true</c> if the block with provided height is before last proof of stake reward, <c>false</c> otherwise.</returns>
+        protected bool IsBeforeEndOfProofOfStakeReward(int height)
+        {
+            return (this.Consensus.LastPOWBlock > 0) &&
+                   (this.Consensus.LastPOWBlock > 0) &&
+                   (height <= this.Consensus.LastProofOfStakeRewardHeight);
         }
     }
 }
