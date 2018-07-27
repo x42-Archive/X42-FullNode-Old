@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using NBitcoin;
+using NBitcoin.Networks;
 using NBitcoin.Protocol;
 using Stratis.Bitcoin;
 using Stratis.Bitcoin.Builder;
@@ -9,6 +10,7 @@ using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.LightWallet;
 using Stratis.Bitcoin.Features.Notifications;
+using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.BreezeD
@@ -22,6 +24,7 @@ namespace Stratis.BreezeD
                 // Get the API uri.
                 bool isTestNet = args.Contains("-testnet");
                 bool isStratis = args.Contains("stratis");
+                bool isx42 = args.Contains("x42");
 
                 string agent = "Breeze";
 
@@ -29,11 +32,19 @@ namespace Stratis.BreezeD
 
                 if (isStratis)
                 {
-                    Network network = isTestNet ? Network.StratisTest : Network.StratisMain;
+                    Network network = isTestNet ? NetworkRegistration.Register(new StratisTest()) : NetworkRegistration.Register(new StratisMain());
                     if (isTestNet)
                         args = args.Append("-addnode=51.141.28.47").ToArray(); // TODO: fix this temp hack
 
-                    nodeSettings = new NodeSettings(network, ProtocolVersion.X42_PROTOCOL_VERSION, agent, args:args);
+                    nodeSettings = new NodeSettings(network, ProtocolVersion.X42_PROTOCOL_VERSION, agent, args: args);
+                }
+                else if (isx42)
+                {
+                    Network network = isTestNet ? NetworkRegistration.Register(new x42Main()) : NetworkRegistration.Register(new x42Main());
+                    if (isTestNet)
+                        args = args.Append("-addnode=51.141.28.47").ToArray(); // TODO: fix this temp hack
+
+                    nodeSettings = new NodeSettings(network, ProtocolVersion.X42_PROTOCOL_VERSION, agent, args: args);
                 }
                 else
                 {

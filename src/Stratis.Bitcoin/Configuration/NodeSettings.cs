@@ -6,11 +6,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
+using NBitcoin.Networks;
 using NBitcoin.Protocol;
 using NLog.Extensions.Logging;
 using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Configuration.Settings;
+using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Configuration
@@ -30,7 +32,7 @@ namespace Stratis.Bitcoin.Configuration
     /// <summary>
     /// Node configuration complied from both the application command line arguments and the configuration file.
     /// </summary>
-    public class NodeSettings
+    public class NodeSettings : IDisposable
     {
         /// <summary>Version of the protocol the current implementation supports.</summary>
         public const ProtocolVersion SupportedProtocolVersion = ProtocolVersion.SENDHEADERS_VERSION;
@@ -90,7 +92,7 @@ namespace Stratis.Bitcoin.Configuration
         /// - Alternatively, if the file name is not supplied then a network-specific file 
         ///   name would be determined. In this case we first need to determine the network.
         /// </remarks>
-        public NodeSettings(Network network = null, ProtocolVersion protocolVersion = SupportedProtocolVersion, 
+        public NodeSettings(Network network = null, ProtocolVersion protocolVersion = SupportedProtocolVersion,
             string agent = "x42", string[] args = null)
         {
             // Create the default logger factory and logger.
@@ -106,16 +108,16 @@ namespace Stratis.Bitcoin.Configuration
             this.ConfigReader = new TextFileConfiguration(args ?? new string[] { });
 
             // Log arguments.
-            this.Logger.LogDebug("Arguments: network='{0}', protocolVersion='{1}', agent='{2}', args='{3}'.", 
+            this.Logger.LogDebug("Arguments: network='{0}', protocolVersion='{1}', agent='{2}', args='{3}'.",
                 this.Network == null ? "(None)" : this.Network.Name,
                 this.ProtocolVersion,
                 this.Agent,
-                args == null?"(None)":string.Join(" ", args));
+                args == null ? "(None)" : string.Join(" ", args));
 
             // By default, we look for a file named '<network>.conf' in the network's data directory,
             // but both the data directory and the configuration file path may be changed using the -datadir and -conf command-line arguments.
             this.ConfigurationFile = this.ConfigReader.GetOrDefault<string>("conf", null, this.Logger)?.NormalizeDirectorySeparator();
-            this.DataDir = this.ConfigReader.GetOrDefault<string>("datadir",  null, this.Logger)?.NormalizeDirectorySeparator();        
+            this.DataDir = this.ConfigReader.GetOrDefault<string>("datadir", null, this.Logger)?.NormalizeDirectorySeparator();
 
             // If the configuration file is relative then assume it is relative to the data folder and combine the paths.
             if (this.DataDir != null && this.ConfigurationFile != null)
@@ -148,9 +150,9 @@ namespace Stratis.Bitcoin.Configuration
                     throw new ConfigurationException("Invalid combination of regtest and testnet.");
 
                 if (protocolVersion == ProtocolVersion.X42_PROTOCOL_VERSION)
-                    this.Network = testNet ? Network.X42Test : regTest ? Network.X42Test : Network.X42Main;
+                    this.Network = testNet ? NetworkRegistration.Register(new x42Main()) : regTest ? NetworkRegistration.Register(new x42Main()) : NetworkRegistration.Register(new x42Main());
                 else
-                    this.Network = testNet ? Network.TestNet : regTest ? Network.RegTest : Network.Main;
+                    this.Network = testNet ? NetworkRegistration.Register(new BitcoinTest()) : regTest ? NetworkRegistration.Register(new BitcoinRegTest()) : NetworkRegistration.Register(new BitcoinMain());
 
                 this.Logger.LogDebug("Network set to '{0}'.", this.Network.Name);
             }
@@ -159,7 +161,7 @@ namespace Stratis.Bitcoin.Configuration
             if (this.DataDir == null)
             {
                 // Create the data directories if they don't exist.
-                this.DataDir = this.CreateDefaultDataDirectories(Path.Combine("x42", this.Network.RootFolderName), this.Network);
+                this.DataDir = this.CreateDefaultDataDirectories(Path.Combine("x42Node", this.Network.RootFolderName), this.Network);
             }
             else
             {
@@ -168,7 +170,7 @@ namespace Stratis.Bitcoin.Configuration
                 this.DataDir = Directory.CreateDirectory(directoryPath).FullName;
                 this.Logger.LogDebug("Data directory initialized with path {0}.", this.DataDir);
             }
-            
+
             // Set the data folder.
             this.DataFolder = new DataFolder(this.DataDir);
 
@@ -320,7 +322,7 @@ namespace Stratis.Bitcoin.Configuration
         {
             Guard.NotNull(network, nameof(network));
 
-            NodeSettings defaults = Default(network:network);
+            NodeSettings defaults = Default(network: network);
             string daemonName = Path.GetFileName(Assembly.GetEntryAssembly().Location);
 
             var builder = new StringBuilder();
@@ -346,7 +348,7 @@ namespace Stratis.Bitcoin.Configuration
 
             ConnectionManagerSettings.PrintHelp(network);
         }
-        
+
         /// <summary>
         /// Get the default configuration.
         /// </summary>
@@ -354,13 +356,13 @@ namespace Stratis.Bitcoin.Configuration
         /// <param name="network">The network to base the defaults off.</param>
         public static void BuildDefaultConfigurationFile(StringBuilder builder, Network network)
         {
-            NodeSettings defaults = Default(network:network);
+            NodeSettings defaults = Default(network: network);
 
             builder.AppendLine("####Node Settings####");
             builder.AppendLine($"#Test network. Defaults to 0.");
-            builder.AppendLine($"testnet={((network.IsTest() && !network.IsRegTest())?1:0)}");
+            builder.AppendLine($"testnet={((network.IsTest() && !network.IsRegTest()) ? 1 : 0)}");
             builder.AppendLine($"#Regression test network. Defaults to 0.");
-            builder.AppendLine($"regtest={(network.IsRegTest()?1:0)}");
+            builder.AppendLine($"regtest={(network.IsRegTest() ? 1 : 0)}");
             builder.AppendLine($"#Minimum fee rate. Defaults to {network.MinTxFee}.");
             builder.AppendLine($"#mintxfee={network.MinTxFee}");
             builder.AppendLine($"#Fallback fee rate. Defaults to {network.FallbackFee}.");
@@ -370,6 +372,12 @@ namespace Stratis.Bitcoin.Configuration
             builder.AppendLine();
 
             ConnectionManagerSettings.BuildDefaultConfigurationFile(builder, network);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.LoggerFactory.Dispose();
         }
     }
 }

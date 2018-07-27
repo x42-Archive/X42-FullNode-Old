@@ -162,7 +162,7 @@ namespace Stratis.Bitcoin.P2P
                 {
                     this.logger.LogTrace("Attempting to discover from : '{0}'", endPoint);
 
-                    connectTokenSource.CancelAfter(TimeSpan.FromSeconds(50));
+                    connectTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
 
                     INetworkPeer networkPeer = null;
 
@@ -183,9 +183,8 @@ namespace Stratis.Bitcoin.P2P
 
                         connectTokenSource.Token.WaitHandle.WaitOne(TimeSpan.FromSeconds(5));
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        this.logger.LogTrace("Error peersToDiscover: '{0}'", ex);
                     }
                     finally
                     {

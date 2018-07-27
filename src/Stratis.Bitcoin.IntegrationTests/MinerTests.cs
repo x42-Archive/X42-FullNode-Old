@@ -21,12 +21,13 @@ using Stratis.Bitcoin.Features.Consensus.Rules;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.MemoryPool.Fee;
 using Stratis.Bitcoin.Features.Miner;
-using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
+using Stratis.Bitcoin.IntegrationTests.Mempool;
 using Stratis.Bitcoin.Mining;
 using Stratis.Bitcoin.P2P;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Utilities;
 using Xunit;
 
@@ -40,8 +41,8 @@ namespace Stratis.Bitcoin.IntegrationTests
         {
             var options = new BlockDefinitionOptions
             {
-                BlockMaxWeight = testContext.network.Consensus.Option<PowConsensusOptions>().MaxBlockWeight,
-                BlockMaxSize = testContext.network.Consensus.Option<PowConsensusOptions>().MaxBlockSerializedSize,
+                BlockMaxWeight = testContext.network.Consensus.Options.MaxBlockWeight,
+                BlockMaxSize = testContext.network.Consensus.Options.MaxBlockSerializedSize,
                 BlockMinFeeRate = blockMinFeeRate
             };
 
@@ -128,14 +129,14 @@ namespace Stratis.Bitcoin.IntegrationTests
                     this.blockinfo.Add(new Blockinfo { extranonce = (int)lst[i], nonce = (uint)lst[i + 1] });
 
                 // Note that by default, these tests run with size accounting enabled.
-                this.network = Network.Main;
+                this.network = KnownNetworks.Main;
                 byte[] hex = Encoders.Hex.DecodeData("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f");
                 this.scriptPubKey = new Script(new[] { Op.GetPushOp(hex), OpcodeType.OP_CHECKSIG });
                 this.newBlock = new BlockTemplate(this.network);
 
                 this.entry = new TestMemPoolEntryHelper();
                 this.chain = new ConcurrentChain(this.network);
-                this.network.Consensus.Options = new PowConsensusOptions();
+                this.network.Consensus.Options = new ConsensusOptions();
                 IDateTimeProvider dateTimeProvider = DateTimeProvider.Default;
 
                 this.cachedCoinView = new CachedCoinView(new InMemoryCoinView(this.chain.Tip.HashBlock), dateTimeProvider, new LoggerFactory());
@@ -149,9 +150,9 @@ namespace Stratis.Bitcoin.IntegrationTests
                 var networkPeerFactory = new NetworkPeerFactory(this.network, dateTimeProvider, loggerFactory, new PayloadProvider().DiscoverPayloads(), new SelfEndpointTracker());
 
                 var peerAddressManager = new PeerAddressManager(DateTimeProvider.Default, nodeSettings.DataFolder, loggerFactory, new SelfEndpointTracker());
-                var peerDiscovery = new PeerDiscovery(new AsyncLoopFactory(loggerFactory), loggerFactory, Network.Main, networkPeerFactory, new NodeLifetime(), nodeSettings, peerAddressManager);
+                var peerDiscovery = new PeerDiscovery(new AsyncLoopFactory(loggerFactory), loggerFactory, this.network, networkPeerFactory, new NodeLifetime(), nodeSettings, peerAddressManager);
                 var connectionSettings = new ConnectionManagerSettings(nodeSettings);
-                var connectionManager = new ConnectionManager(dateTimeProvider, loggerFactory, this.network, networkPeerFactory, nodeSettings, new NodeLifetime(), new NetworkPeerConnectionParameters(), peerAddressManager, new IPeerConnector[] { }, peerDiscovery, connectionSettings);
+                var connectionManager = new ConnectionManager(dateTimeProvider, loggerFactory, this.network, networkPeerFactory, nodeSettings, new NodeLifetime(), new NetworkPeerConnectionParameters(), peerAddressManager, new IPeerConnector[] { }, peerDiscovery, connectionSettings, new VersionProvider());
 
                 var blockPuller = new LookaheadBlockPuller(this.chain, connectionManager, new LoggerFactory());
                 var peerBanning = new PeerBanning(connectionManager, loggerFactory, dateTimeProvider, peerAddressManager);
@@ -172,7 +173,7 @@ namespace Stratis.Bitcoin.IntegrationTests
                 // Simple block creation, nothing special yet:
                 this.newBlock = AssemblerForTest(this).Build(this.chain.Tip, this.scriptPubKey);
                 this.chain.SetTip(this.newBlock.Block.Header);
-                await this.consensus.ValidateAndExecuteBlockAsync(new PowRuleContext(new ValidationContext { Block = this.newBlock.Block }, this.network.Consensus, this.consensus.Tip) { MinedBlock = true });
+                await this.consensus.ValidateAndExecuteBlockAsync(new PowRuleContext(new ValidationContext { Block = this.newBlock.Block }, this.network.Consensus, this.consensus.Tip, this.DateTimeProvider.GetTimeOffset()) { MinedBlock = true });
 
                 // We can't make transactions until we have inputs
                 // Therefore, load 100 blocks :)
@@ -205,7 +206,7 @@ namespace Stratis.Bitcoin.IntegrationTests
                     block.Header.Nonce = this.blockinfo[i].nonce;
 
                     this.chain.SetTip(block.Header);
-                    await this.consensus.ValidateAndExecuteBlockAsync(new PowRuleContext(new ValidationContext { Block = block }, this.network.Consensus, this.consensus.Tip) { MinedBlock = true });
+                    await this.consensus.ValidateAndExecuteBlockAsync(new PowRuleContext(new ValidationContext { Block = block }, this.network.Consensus, this.consensus.Tip, this.DateTimeProvider.GetTimeOffset()) { MinedBlock = true });
                     blocks.Add(block);
                 }
 

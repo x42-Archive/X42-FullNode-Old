@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>Stratis Bitcoin FullNode</Description>
     <AssemblyTitle>Stratis.Bitcoin</AssemblyTitle>
-    <TargetFramework>netstandard2.0</TargetFramework>    
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Stratis.Bitcoin</AssemblyName>
     <PackageId>Stratis.Bitcoin</PackageId>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
@@ -41,6 +41,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\NBitcoin\NBitcoin.csproj" />
+    <ProjectReference Include="..\Stratis.Bitcoin.Networks\Stratis.Bitcoin.Networks.csproj" />
   </ItemGroup>
 
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

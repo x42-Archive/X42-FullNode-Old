@@ -19,15 +19,7 @@ namespace Stratis.Bitcoin.Features.Api
 
         public LoggingActionFilter(ILoggerFactory loggerFactory)
         {
-            try
-            {
-                this.logger = loggerFactory.CreateLogger("api.request.logger");
-            }
-            catch (Exception)
-            {
-                //Sometime this hangs when closing. 
-            }
-
+            this.logger = loggerFactory.CreateLogger("api.request.logger");
         }
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)

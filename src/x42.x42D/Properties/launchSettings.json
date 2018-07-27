@@ -15,7 +15,7 @@
       "commandName": "Project",
       "commandLineArgs": "-testnet -keepalive=60"
     },
-    "X42.X42D": {
+    "x42.x42D": {
       "commandName": "Project"
     }
   }

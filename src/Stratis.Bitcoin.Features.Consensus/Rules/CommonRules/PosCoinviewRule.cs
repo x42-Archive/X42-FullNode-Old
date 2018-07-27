@@ -10,7 +10,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
     /// <summary>
     /// Proof of stake override for the coinview rules - BIP68, MaxSigOps and BlockReward checks.
     /// </summary>
-    [ExecutionRule]
+    [FullValidationRule]
     public sealed class PosCoinviewRule : CoinViewRule
     {
         /// <summary>Provides functionality for checking validity of PoS blocks.</summary>
@@ -69,11 +69,6 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 var posRuleContext = context as PosRuleContext;
                 Money stakeReward = block.Transactions[1].TotalOut - posRuleContext.TotalCoinStakeValueIn;
                 Money calcStakeReward = fees + this.GetProofOfStakeReward(height);
-
-                if (height == this.consensus.SubsidyLimit)
-                {
-                    stakeReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
-                }
 
                 this.Logger.LogTrace("Block stake reward is {0}, calculated reward is {1}.", stakeReward, calcStakeReward);
                 if (stakeReward > calcStakeReward)
@@ -221,7 +216,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             {
                 this.Logger.LogTrace("-= PoS =-");
             }
-            
+
             if (this.IsSubsidyLimitReached(height) && this.IsBeforeEndOfProofOfStakeReward(height))
             {
                 PoSReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;

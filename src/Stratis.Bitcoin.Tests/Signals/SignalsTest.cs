@@ -1,15 +1,16 @@
 ﻿using Moq;
 using NBitcoin;
 using Stratis.Bitcoin.Signals;
+using Stratis.Bitcoin.Tests.Common;
 using Xunit;
 
 namespace Stratis.Bitcoin.Tests.Signals
 {
     public class SignalsTest
     {
-        private Mock<ISignaler<Block>> blockSignaler;
-        private Bitcoin.Signals.Signals signals;
-        private Mock<ISignaler<Transaction>> transactionSignaler;
+        private readonly Mock<ISignaler<Block>> blockSignaler;
+        private readonly Bitcoin.Signals.Signals signals;
+        private readonly Mock<ISignaler<Transaction>> transactionSignaler;
 
         public SignalsTest()
         {
@@ -21,7 +22,7 @@ namespace Stratis.Bitcoin.Tests.Signals
         [Fact]
         public void SignalBlockBroadcastsToBlockSignaler()
         {
-            var block = new Block();
+            Block block = KnownNetworks.StratisMain.CreateBlock();
 
             this.signals.SignalBlock(block);
 
@@ -31,7 +32,7 @@ namespace Stratis.Bitcoin.Tests.Signals
         [Fact]
         public void SignalTransactionBroadcastsToTransactionSignaler()
         {
-            var transaction = new Transaction();
+            Transaction transaction = KnownNetworks.StratisMain.CreateTransaction();
 
             this.signals.SignalTransaction(transaction);
 

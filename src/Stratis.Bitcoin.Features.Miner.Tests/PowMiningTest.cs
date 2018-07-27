@@ -12,6 +12,7 @@ using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.MemoryPool.Interfaces;
 using Stratis.Bitcoin.Mining;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Tests.Common.Logging;
 using Stratis.Bitcoin.Utilities;
 using Xunit;
@@ -20,16 +21,16 @@ namespace Stratis.Bitcoin.Features.Miner.Tests
 {
     public class PowMiningTest : LogsTestBase, IClassFixture<PowMiningTestFixture>
     {
-        private Mock<IAsyncLoopFactory> asyncLoopFactory;
+        private readonly Mock<IAsyncLoopFactory> asyncLoopFactory;
         private ConcurrentChain chain;
-        private Mock<IConsensusLoop> consensusLoop;
-        private Mock<IConsensusRules> consensusRules;
-        private NBitcoin.Consensus.ConsensusOptions initialNetworkOptions;
-        private PowMiningTestFixture fixture;
-        private Mock<ITxMempool> mempool;
-        private MempoolSchedulerLock mempoolLock;
-        private Network network;
-        private Mock<INodeLifetime> nodeLifetime;
+        private readonly Mock<IConsensusLoop> consensusLoop;
+        private readonly Mock<IConsensusRules> consensusRules;
+        private readonly ConsensusOptions initialNetworkOptions;
+        private readonly PowMiningTestFixture fixture;
+        private readonly Mock<ITxMempool> mempool;
+        private readonly MempoolSchedulerLock mempoolLock;
+        private readonly Network network;
+        private readonly Mock<INodeLifetime> nodeLifetime;
 
         public PowMiningTest(PowMiningTestFixture fixture)
         {
@@ -38,12 +39,13 @@ namespace Stratis.Bitcoin.Features.Miner.Tests
 
             this.initialNetworkOptions = this.network.Consensus.Options;
             if (this.initialNetworkOptions == null)
-                this.network.Consensus.Options = new PowConsensusOptions();
+                this.network.Consensus.Options = new ConsensusOptions();
 
             this.asyncLoopFactory = new Mock<IAsyncLoopFactory>();
 
             this.consensusLoop = new Mock<IConsensusLoop>();
             this.consensusLoop.SetupGet(c => c.Tip).Returns(() => this.chain.Tip);
+            this.consensusRules = new Mock<IConsensusRules>();
 
             this.mempool = new Mock<ITxMempool>();
             this.mempool.SetupGet(mp => mp.MapTx).Returns(new TxMempool.IndexedTransactionSet());
@@ -321,7 +323,7 @@ namespace Stratis.Bitcoin.Features.Miner.Tests
 
                 BlockTemplate blockTemplate = this.CreateBlockTemplate(this.fixture.Block1);
                 blockTemplate.Block.Header.Nonce = 0;
-                blockTemplate.Block.Header.Bits = Network.TestNet.GetGenesis().Header.Bits; // make the difficulty harder.
+                blockTemplate.Block.Header.Bits = KnownNetworks.TestNet.GetGenesis().Header.Bits; // make the difficulty harder.
 
                 this.chain.SetTip(this.chain.GetBlock(0));
 
@@ -512,7 +514,7 @@ namespace Stratis.Bitcoin.Features.Miner.Tests
                     this.mempool.Object,
                     this.mempoolLock,
                     this.network,
-                    this.consensusRules,
+                    this.consensusRules.Object,
                     null);
         }
 
@@ -603,7 +605,7 @@ namespace Stratis.Bitcoin.Features.Miner.Tests
 
         public PowMiningTestFixture()
         {
-            this.Network = Network.RegTest; // fast mining so use regtest
+            this.Network = KnownNetworks.RegTest; // fast mining so use regtest
             this.Chain = new ConcurrentChain(this.Network);
             this.Key = new Key();
             this.ReserveScript = new ReserveScript(this.Key.ScriptPubKey);

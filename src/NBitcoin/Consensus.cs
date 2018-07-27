@@ -24,13 +24,6 @@ namespace NBitcoin
     public class Consensus
     {
         /// <summary>
-        /// An extension to <see cref="Consensus"/> to enable additional options to the consensus data.
-        /// </summary>
-        public class ConsensusOptions
-        {
-        }
-
-        /// <summary>
         /// How many blocks should be on top of a coinbase transaction until its outputs are considered spendable.
         /// </summary>
         public long CoinbaseMaturity { get; set; }
@@ -66,11 +59,6 @@ namespace NBitcoin
         /// The maximum amount of coins in any transaction.
         /// </summary>
         public long MaxMoney { get; set; }
-
-        /// <summary>
-        /// When to stop the rewards for PoS.
-        /// </summary>
-        public Money LastProofOfStakeRewardHeight { get; set; }
 
         public ConsensusOptions Options { get; set; }
 
@@ -111,10 +99,7 @@ namespace NBitcoin
             this.BuriedDeployments = new BuriedDeploymentsArray();
             this.BIP9Deployments = new BIP9DeploymentsArray();
 
-            this.ConsensusFactory = new ConsensusFactory()
-            {
-                Consensus = this
-            };
+            this.ConsensusFactory = new ConsensusFactory();
         }
 
         public BuriedDeploymentsArray BuriedDeployments { get; set; }
@@ -122,10 +107,6 @@ namespace NBitcoin
         public BIP9DeploymentsArray BIP9Deployments { get; set; }
 
         public int SubsidyHalvingInterval { get; set; }
-
-        public int SubsidyLimit { get; set; }
-
-        public Money ProofOfStakeRewardAfterSubsidyLimit { get; set; }
 
         public int MajorityEnforceBlockUpgrade { get; set; }
 
@@ -183,5 +164,14 @@ namespace NBitcoin
         /// A factory that enables overloading base types.
         /// </summary>
         public ConsensusFactory ConsensusFactory { get; set; }
+
+        public Money ProofOfStakeRewardAfterSubsidyLimit { get; set; }
+        
+        public int SubsidyLimit { get; set; }
+
+        /// <summary>
+        /// When to stop the rewards for PoS.
+        /// </summary>
+        public Money LastProofOfStakeRewardHeight { get; set; }
     }
 }

@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("x42")]
+[assembly: AssemblyTitle("Stratis.Bitcoin")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("x42")]
-[assembly: AssemblyCopyright("Copyright © 2018")]
+[assembly: AssemblyProduct("Stratis.Bitcoin")]
+[assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("534cc4ee-91b1-4a2f-97f7-9a807dac4239")]
+[assembly: Guid("a6c18cae-7246-41b1-bfd6-c54ba1694ac2")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -32,6 +32,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.1")]
-[assembly: AssemblyFileVersion("1.0.0.1")]
-[assembly: InternalsVisibleTo("x42.Tests")]
+[assembly: AssemblyVersion("1.1.12.0")]
+[assembly: AssemblyFileVersion("1.1.12.0")]
+[assembly: InternalsVisibleTo("Stratis.Bitcoin.Tests")]

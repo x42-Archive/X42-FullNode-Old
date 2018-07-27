@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using NBitcoin;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
-using Stratis.Bitcoin.Features.Wallet;
+using Stratis.Bitcoin.Features.Miner.Staking;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.Builders;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
-using static Stratis.Bitcoin.Features.Miner.PosMinting;
 
 namespace Stratis.Bitcoin.IntegrationTests
 {
@@ -23,34 +21,10 @@ namespace Stratis.Bitcoin.IntegrationTests
         public readonly string PremineWalletAccount = "account 0";
         public readonly string PremineWalletPassword = "preminewalletpassword";
 
-        public readonly Money MainFundAmount = new Money(2100000, MoneyUnit.BTC);
-        private HdAddress MainFundAddress;
-        private Key MainFundPrivateKey;
-
-        public readonly Money PreminePrimaryAmount = new Money(2800000, MoneyUnit.BTC);
-        private HdAddress PreminePrimaryAddress;
-        private Key PreminePrimaryPrivateKey;
-
-        public readonly Money PremineSecondaryAmount = new Money(2800000, MoneyUnit.BTC);
-        private HdAddress PremineSecondaryAddress;
-        private Key PremineSecondaryPrivateKey;
-
-        public readonly Money PremineTernaryAmount = new Money(2800000, MoneyUnit.BTC);
-        private HdAddress PremineTernaryAddress;
-        private Key PremineTernaryPrivateKey;
-
-        public Money TotalPremineAmount;
-
         public ProofOfStakeSteps(string displayName)
         {
             this.sharedSteps = new SharedSteps();
             this.NodeGroupBuilder = new NodeGroupBuilder(Path.Combine(this.GetType().Name, displayName));
-            this.TotalPremineAmount = new Money(
-                this.MainFundAmount.Satoshi +
-                this.PreminePrimaryAmount.Satoshi +
-                this.PremineSecondaryAmount.Satoshi +
-                this.PremineTernaryAmount.Satoshi,
-                MoneyUnit.Satoshi);
         }
 
         public void GenerateCoins()
@@ -102,7 +76,7 @@ namespace Stratis.Bitcoin.IntegrationTests
             var network = this.nodes[this.PremineNode].FullNode.Network;
             var premine = network.Consensus.ProofOfWorkReward + network.Consensus.PremineReward;
             var mineToMaturity = network.Consensus.ProofOfWorkReward * 110;
-            var balanceShouldBe = this.TotalPremineAmount.Satoshi + mineToMaturity;
+            var balanceShouldBe = premine + mineToMaturity;
             TestHelper.WaitLoop(() =>
             {
                 long staked = this.nodes[this.PremineNode].FullNode.WalletManager().GetSpendableTransactionsInWallet(this.PremineWallet).Sum(s => s.Transaction.Amount);

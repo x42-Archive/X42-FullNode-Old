@@ -11,6 +11,7 @@ using Stratis.Bitcoin.Consensus.Rules;
 using Stratis.Bitcoin.Features.Consensus.CoinViews;
 using Stratis.Bitcoin.Features.Consensus.Rules;
 using Stratis.Bitcoin.Features.Consensus.Rules.CommonRules;
+using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Utilities;
 using Xunit;
 
@@ -32,7 +33,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
 
         public PowCoinViewRuleTests()
         {
-            this.network = Network.RegTest;
+            this.network = KnownNetworks.RegTest;
             this.rule = new PowCoinviewRule();
         }
 
@@ -73,7 +74,10 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
             this.ruleContext.ValidationContext = new ValidationContext();
             BlockHeader blockHeader = this.network.Consensus.ConsensusFactory.CreateBlockHeader();
             this.ruleContext.ValidationContext.ChainedHeader = new ChainedHeader(blockHeader, new uint256("bcd7d5de8d3bcc7b15e7c8e5fe77c0227cdfa6c682ca13dcf4910616f10fdd06"), HeightOfBlockchain);
-            this.ruleContext.ValidationContext.Block = new Block() { Transactions = new List<Transaction>() };
+
+            Block block = this.network.CreateBlock();
+            block.Transactions = new List<Transaction>();
+            this.ruleContext.ValidationContext.Block = block;
         }
 
         protected void WhenExecutingTheRule(ConsensusRule rule, RuleContext ruleContext)
@@ -83,12 +87,12 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
                 this.logger = new Mock<ILogger>();
                 rule.Logger = this.logger.Object;
                 rule.Parent = new PowConsensusRules(
-                    Network.RegTest,
+                    this.network,
                     new Mock<ILoggerFactory>().Object,
                     new Mock<IDateTimeProvider>().Object,
                     new ConcurrentChain(this.network),
-                    new NodeDeployments(Network.RegTest, new ConcurrentChain(this.network)),
-                    new ConsensusSettings(), new Mock<ICheckpoints>().Object, new Mock<CoinView>().Object, null);
+                    new NodeDeployments(this.network, new ConcurrentChain(this.network)),
+                    new ConsensusSettings(), new Mock<ICheckpoints>().Object, new Mock<ICoinView>().Object, null);
 
                 rule.Initialize();
 
