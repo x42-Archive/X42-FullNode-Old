@@ -68,8 +68,8 @@ Running a FullNode
 Our full node is currently in alpha.  
 
 ```
-git clone https://github.com/x42project/x42BitcoinFullNode.git  
-cd x42BitcoinFullNode\src
+git clone https://github.com/x42protocol/X42-FullNode.git
+cd X42-FullNode\src
 
 dotnet restore
 dotnet build
