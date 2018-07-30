@@ -423,11 +423,12 @@ namespace Stratis.Bitcoin.Features.Miner
                     packageSigOpsCost = modit.SigOpCostWithAncestors;
                 }
 
-                if (packageFees < this.BlockMinFeeRate.GetFee((int)packageSize))
-                {
-                    // Everything else we might consider has a lower fee rate
-                    return;
-                }
+                // There are no fee's, so we need to process.
+                //if (packageFees < this.BlockMinFeeRate.GetFee((int)packageSize))
+                //{
+                //    // Everything else we might consider has a lower fee rate
+                //    return;
+                //}
 
                 if (!this.TestPackage(packageSize, packageSigOpsCost))
                 {
