@@ -241,7 +241,11 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 OutPoint prevout = transaction.Inputs[i].PrevOut;
                 UnspentOutputs coins = inputs.AccessCoins(prevout.Hash);
 
-                this.CheckMaturity(coins, spendHeight);
+                //Only check output's that have value, not all blocks will have a reward.
+                if (coins.TryGetOutput(prevout.N).Value > Money.Zero)
+                {
+                    this.CheckMaturity(coins, spendHeight);
+                }
 
                 // Check for negative or overflow input values.
                 valueIn += coins.TryGetOutput(prevout.N).Value;
