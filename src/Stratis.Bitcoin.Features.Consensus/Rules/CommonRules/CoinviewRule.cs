@@ -466,8 +466,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// <returns><c>true</c> if the block with provided height is before last proof of stake reward, <c>false</c> otherwise.</returns>
         protected bool IsBeforeEndOfProofOfStakeReward(int height)
         {
-            return (this.Consensus.LastPOWBlock > 0) &&
-                   (this.Consensus.LastPOWBlock > 0) &&
+            return (this.Consensus.LastProofOfStakeRewardHeight > 0) &&
+                   (this.Consensus.LastProofOfStakeRewardHeight > 0) &&
                    (height <= this.Consensus.LastProofOfStakeRewardHeight);
         }
     }

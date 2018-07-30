@@ -214,22 +214,19 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 
             if (this.IsPastLastPOWBlock(height))
             {
-                this.Logger.LogTrace("-= PoS =-");
+                if (this.IsSubsidyLimitReached(height) && this.IsBeforeEndOfProofOfStakeReward(height))
+                {
+                    PoSReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
+                }
+                else if (this.IsBeforeEndOfProofOfStakeReward(height))
+                {
+                    PoSReward = this.consensus.ProofOfStakeReward;
+                }
+                else if (this.IsPremine(height))
+                {
+                    PoSReward = this.consensus.PremineReward;
+                }
             }
-
-            if (this.IsSubsidyLimitReached(height) && this.IsBeforeEndOfProofOfStakeReward(height))
-            {
-                PoSReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
-            }
-            else if (this.IsBeforeEndOfProofOfStakeReward(height))
-            {
-                PoSReward = this.consensus.ProofOfStakeReward;
-            }
-            else if (this.IsPremine(height))
-            {
-                PoSReward = this.consensus.PremineReward;
-            }
-
             return PoSReward;
         }
     }

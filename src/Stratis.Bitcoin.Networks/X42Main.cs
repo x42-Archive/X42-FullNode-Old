@@ -76,8 +76,8 @@ namespace NBitcoin.Networks
             this.Consensus.ProofOfStakeRewardAfterSubsidyLimit = Money.Coins(5);
             this.Consensus.MaxReorgLength = 500;
             this.Consensus.MaxMoney = Money.Coins(42 * 1000000);
-            this.Consensus.SubsidyLimit = 800;
-            this.Consensus.LastProofOfStakeRewardHeight = 1000; // 6540
+            this.Consensus.SubsidyLimit = 550000;
+            this.Consensus.LastProofOfStakeRewardHeight = 4652621;
 
             this.Base58Prefixes = new byte[12][];
             this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { (75) };
@@ -96,7 +96,6 @@ namespace NBitcoin.Networks
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
             this.DNSSeeds = new List<DNSSeedData>
             {
-                //new DNSSeedData("test.x42.tech", "test.x42.tech"),
                 new DNSSeedData("test2.x42.tech", "test2.x42.tech")
             };
 
@@ -104,9 +103,9 @@ namespace NBitcoin.Networks
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
                        
             // Create the genesis block.
-            this.GenesisTime = 1532442070;
+            this.GenesisTime = 1532970523;
             this.GenesisNonce = 246101626;
-            this.GenesisBits = this.Consensus.PowLimit;
+            this.GenesisBits = 0x1e0fffff;
             this.GenesisVersion = 1;
             this.GenesisReward = Money.Zero;
 
