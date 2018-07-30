@@ -702,16 +702,16 @@ namespace Stratis.Bitcoin.Features.Miner.Staking
             this.logger.LogTrace("Worker #{0} found the kernel.", workersResult.KernelFoundIndex);
 
             
-            //// Get reward for newly created block.
-            //long reward = fees + this.consensusLoop.ConsensusRules.GetRule<PosCoinviewRule>().GetProofOfStakeReward(chainTip.Height + 1);
-            //if (reward <= 0)
-            //{
-            //    // TODO: This can't happen unless we remove reward for mined block.
-            //    // If this can happen over time then this check could be done much sooner
-            //    // to avoid a lot of computation.
-            //    //this.logger.LogTrace("(-)[NO_REWARD]:false");
-            //    //return false;
-            //}
+            // Get reward for newly created block.
+            long reward = fees + this.consensusLoop.ConsensusRules.GetRule<PosCoinviewRule>().GetProofOfStakeReward(chainTip.Height + 1);
+            if (reward <= 0)
+            {
+                // TODO: This can't happen unless we remove reward for mined block.
+                // If this can happen over time then this check could be done much sooner
+                // to avoid a lot of computation.
+                //this.logger.LogTrace("(-)[NO_REWARD]:false");
+                //return false;
+            }
 
             // Split stake if above threshold.
             bool splitStake = this.GetSplitStake(nonEmptyUtxos, chainTip);
