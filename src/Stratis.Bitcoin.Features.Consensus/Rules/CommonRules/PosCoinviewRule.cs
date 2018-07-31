@@ -214,11 +214,11 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 
             if (this.IsPastLastPOWBlock(height))
             {
-                if (this.IsSubsidyLimitReached(height) && this.IsBeforeEndOfProofOfStakeReward(height))
+                if (this.IsPastSubsidyLimit(height) && this.IsAtOrBeforeEndOfProofOfStakeReward(height))
                 {
                     PoSReward = this.consensus.ProofOfStakeRewardAfterSubsidyLimit;
                 }
-                else if (this.IsBeforeEndOfProofOfStakeReward(height))
+                else if (this.IsAtOrBeforeEndOfProofOfStakeReward(height))
                 {
                     PoSReward = this.consensus.ProofOfStakeReward;
                 }

@@ -444,11 +444,11 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// </summary>
         /// <param name="height">Block's height.</param>
         /// <returns><c>true</c> if the block with provided height is past the Subsidy Limit, <c>false</c> otherwise.</returns>
-        protected bool IsSubsidyLimitReached(int height)
+        protected bool IsPastSubsidyLimit(int height)
         {
             return (this.Consensus.SubsidyLimit > 0) &&
                    (this.Consensus.SubsidyLimit > 0) &&
-                   (height >= this.Consensus.SubsidyLimit);
+                   (height > this.Consensus.SubsidyLimit);
         }
 
         /// <summary>
@@ -468,7 +468,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// </summary>
         /// <param name="height">Block's height.</param>
         /// <returns><c>true</c> if the block with provided height is before last proof of stake reward, <c>false</c> otherwise.</returns>
-        protected bool IsBeforeEndOfProofOfStakeReward(int height)
+        protected bool IsAtOrBeforeEndOfProofOfStakeReward(int height)
         {
             return (this.Consensus.LastProofOfStakeRewardHeight > 0) &&
                    (this.Consensus.LastProofOfStakeRewardHeight > 0) &&
