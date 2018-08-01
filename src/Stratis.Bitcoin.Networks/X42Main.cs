@@ -57,7 +57,7 @@ namespace NBitcoin.Networks
             this.Consensus.BIP34Hash = new uint256("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8");
             this.Consensus.PowLimit = new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
             this.Consensus.PowTargetTimespan = TimeSpan.FromSeconds(14 * 24 * 60 * 60); // two weeks
-            this.Consensus.PowTargetSpacing = TimeSpan.FromSeconds(10 * 60);
+            this.Consensus.PowTargetSpacing = TimeSpan.FromSeconds(60);
             this.Consensus.PowAllowMinDifficultyBlocks = false;
             this.Consensus.PowNoRetargeting = false;
             this.Consensus.RuleChangeActivationThreshold = 1916; // 95% of 2016
@@ -67,7 +67,7 @@ namespace NBitcoin.Networks
             this.Consensus.ConsensusFactory = new PosConsensusFactory();
             this.Consensus.ProofOfStakeLimitV2 = new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false));
             this.Consensus.CoinType = 424242;
-            this.Consensus.DefaultAssumeValid = null; //new uint256("0x6b86db75dfc2c36cbb104f5daaf37cf0a5252505a0d178aaab91a2513c08db0a"); // 795970
+            this.Consensus.DefaultAssumeValid = null; //new uint256("0x000443b0909a66b38f4a8411a25c773f73e6e34cad316bd2df20643612b3e557"); // 52
             this.Consensus.CoinbaseMaturity = 50;
             this.Consensus.PremineReward = Money.Coins(10.5m * 1000000);
             this.Consensus.PremineHeight = 2;
@@ -96,14 +96,14 @@ namespace NBitcoin.Networks
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
             this.DNSSeeds = new List<DNSSeedData>
             {
-                new DNSSeedData("test2.x42.tech", "test2.x42.tech")
+                new DNSSeedData("seednode1.x42.tech", "seednode1.x42.tech")
             };
 
-            string[] seedNodes = { "67.214.249.184", "192.168.0.1" };
+            string[] seedNodes = { "67.214.249.184" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
                        
             // Create the genesis block.
-            this.GenesisTime = 1532970523;
+            this.GenesisTime = 1533106324;
             this.GenesisNonce = 246101626;
             this.GenesisBits = 0x1e0fffff;
             this.GenesisVersion = 1;
@@ -111,13 +111,13 @@ namespace NBitcoin.Networks
 
             this.Genesis = CreateX42GenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
             this.Consensus.HashGenesisBlock = this.Genesis.GetHash();
-            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x63cb96c961d80ace48a528dfb86bcb2f95be8f7edb591d5edac94d29aade4e27"));
-            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0xc5bbfac0990b7c901fdb13236886ec23ce313168480a489f4cdc1dcd959efa58"));
+            Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x04ffe583707a96c1c2eb54af33a4b1dc6d9d8e09fea8c9a7b097ba88f0cb64c4"));
+            Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0x6e3439a32382f83dee4f94a6f8bdd38908bcf0c82ec09aba85c5321357f01f67"));
         }
 
         protected static Block CreateX42GenesisBlock(ConsensusFactory consensusFactory, uint nTime, uint nNonce, uint nBits, int nVersion, Money genesisReward)
         {
-            string pszTimestamp = "For US, ‘Modern-Day Slavery Is a Feature of the Current Immigration Regime’ - https://sputniknews.com/analysis/201807241066627624-modern-day-slavery-feature-immigration-regime/ | popó & lita - 6F3582CC2B720980C936D95A2E07F809";
+            string pszTimestamp = "On Emancipation Day, we are fighting to maintain our democratic freedom at various levels - https://www.stabroeknews.com/2018/opinion/letters/08/01/on-emancipation-day-we-are-fighting-to-maintain-our-democratic-freedom-at-various-levels/ | popó & lita - 6F3582CC2B720980C936D95A2E07F809";
 
             Transaction txNew = consensusFactory.CreateTransaction();
             txNew.Version = 1;
