@@ -96,7 +96,8 @@ namespace NBitcoin.Networks
             this.Checkpoints = new Dictionary<int, CheckpointInfo>();
             this.DNSSeeds = new List<DNSSeedData>
             {
-                new DNSSeedData("seednode1.x42.tech", "seednode1.x42.tech")
+                new DNSSeedData("seednode1.x42.tech", "seednode1.x42.tech"),
+                new DNSSeedData("seednode2.x42.tech", "seednode2.x42.tech")
             };
 
             string[] seedNodes = { "67.214.249.184" };
