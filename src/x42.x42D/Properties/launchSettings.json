@@ -1,8 +1,5 @@
 {
   "profiles": {
-    "Stratis.StratisD": {
-      "commandName": "Project"
-    },
     "Stratis.StratisD Test": {
       "commandName": "Project",
       "commandLineArgs": "-testnet"

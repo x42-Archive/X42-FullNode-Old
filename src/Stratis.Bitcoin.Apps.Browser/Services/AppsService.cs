@@ -19,7 +19,7 @@ namespace Stratis.Bitcoin.Apps.Browser.Services
         public async Task<List<StratisApp>> GetApplicationsAsync()
         {
             var serializer = new DataContractJsonSerializer(typeof(List<StratisApp>));
-            Task<System.IO.Stream> streamTask = this.httpClient.GetStreamAsync("http://localhost:42220/api/apps/all");
+            Task<System.IO.Stream> streamTask = this.httpClient.GetStreamAsync("http://localhost:38221/api/apps/all");
             return serializer.ReadObject(await streamTask) as List<StratisApp>;
         }
     }

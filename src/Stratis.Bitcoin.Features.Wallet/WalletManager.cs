@@ -784,7 +784,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                         $"Account '{walletAccountReference.AccountName}' in wallet '{walletAccountReference.WalletName}' not found.");
                 }
 
-                res = account.GetSpendableTransactions(this.chain.Tip.Height, confirmations).ToArray();
+                res = account.GetSpendableTransactions(this.chain.Tip.Height, this.network, confirmations).ToArray();
             }
 
             this.logger.LogTrace("(-):*.Count={0}", res.Count());
@@ -985,6 +985,7 @@ namespace Stratis.Bitcoin.Features.Wallet
                 var newTransaction = new TransactionData
                 {
                     Amount = amount,
+                    IsCoinBase = transaction.IsCoinBase == false ? (bool?)null : true,
                     IsCoinStake = transaction.IsCoinStake == false ? (bool?)null : true,
                     BlockHeight = blockHeight,
                     BlockHash = block?.GetHash(),
@@ -1223,12 +1224,7 @@ namespace Stratis.Bitcoin.Features.Wallet
 
             lock (this.lockObject)
             {
-                // Update the wallets with the last processed block height.
-                foreach (AccountRoot accountRoot in wallet.AccountsRoot.Where(a => a.CoinType == this.coinType))
-                {
-                    accountRoot.LastBlockSyncedHeight = chainedHeader.Height;
-                    accountRoot.LastBlockSyncedHash = chainedHeader.HashBlock;
-                }
+                wallet.SetLastBlockDetailsByCoinType(this.coinType, chainedHeader);
             }
 
             this.logger.LogTrace("(-)");

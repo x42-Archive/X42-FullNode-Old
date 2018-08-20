@@ -5,9 +5,9 @@ using NBitcoin;
 using NBitcoin.BouncyCastle.Math;
 using NBitcoin.DataEncoders;
 
-namespace NBitcoin.Networks
+namespace Stratis.Bitcoin.Networks
 {
-    public class x42Main : Network
+    public class X42Main : Network
     {
 
         /// <summary> x42 maximal value for the calculated time offset. If the value is over this limit, the time syncing feature will be switched off. </summary>
@@ -22,8 +22,9 @@ namespace NBitcoin.Networks
         /// <summary> The default name used for the x42 configuration file. </summary>
         public const string x42DefaultConfigFilename = "x42.conf";
 
-        public x42Main()
+        public X42Main()
         {
+
             // The message start string is designed to be unlikely to occur in normal data.
             // The characters are rarely used upper ASCII, not valid as UTF-8, and produce
             // a large 4-byte int at any alignment.
@@ -47,37 +48,70 @@ namespace NBitcoin.Networks
             this.MaxTimeOffsetSeconds = 25 * 60;
             this.CoinTicker = "x42";
 
-            this.Consensus.SubsidyHalvingInterval = 210000;
-            this.Consensus.MajorityEnforceBlockUpgrade = 750;
-            this.Consensus.MajorityRejectBlockOutdated = 950;
-            this.Consensus.MajorityWindow = 1000;
-            this.Consensus.BuriedDeployments[BuriedDeployments.BIP34] = 0;
-            this.Consensus.BuriedDeployments[BuriedDeployments.BIP65] = 0;
-            this.Consensus.BuriedDeployments[BuriedDeployments.BIP66] = 0;
-            this.Consensus.BIP34Hash = new uint256("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8");
-            this.Consensus.PowLimit = new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-            this.Consensus.PowTargetTimespan = TimeSpan.FromSeconds(14 * 24 * 60 * 60); // two weeks
-            this.Consensus.PowTargetSpacing = TimeSpan.FromSeconds(60);
-            this.Consensus.PowAllowMinDifficultyBlocks = false;
-            this.Consensus.PowNoRetargeting = false;
-            this.Consensus.RuleChangeActivationThreshold = 1916; // 95% of 2016
-            this.Consensus.MinerConfirmationWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
-            this.Consensus.LastPOWBlock = 523;
-            this.Consensus.IsProofOfStake = true;
-            this.Consensus.ConsensusFactory = new PosConsensusFactory();
-            this.Consensus.ProofOfStakeLimitV2 = new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false));
-            this.Consensus.CoinType = 424242;
-            this.Consensus.DefaultAssumeValid = null; //new uint256("0x000443b0909a66b38f4a8411a25c773f73e6e34cad316bd2df20643612b3e557"); // 52
-            this.Consensus.CoinbaseMaturity = 50;
-            this.Consensus.PremineReward = Money.Coins(10.5m * 1000000);
-            this.Consensus.PremineHeight = 2;
-            this.Consensus.ProofOfWorkReward = Money.Zero;
-            this.Consensus.ProofOfStakeReward = Money.Coins(20);
-            this.Consensus.ProofOfStakeRewardAfterSubsidyLimit = Money.Coins(5);
-            this.Consensus.MaxReorgLength = 500;
-            this.Consensus.MaxMoney = Money.Coins(42 * 1000000);
-            this.Consensus.SubsidyLimit = 550000;
-            this.Consensus.LastProofOfStakeRewardHeight = 4652092;
+            var consensusFactory = new PosConsensusFactory();
+
+            // Create the genesis block.
+            this.GenesisTime = 1533106324;
+            this.GenesisNonce = 246101626;
+            this.GenesisBits = 0x1e0fffff;
+            this.GenesisVersion = 1;
+            this.GenesisReward = Money.Zero;
+
+            Block genesisBlock = CreateX42GenesisBlock(consensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
+
+            this.Genesis = genesisBlock;
+
+            var consensusOptions = new PosConsensusOptions(
+                maxBlockBaseSize: 1_000_000,
+                maxStandardVersion: 2,
+                maxStandardTxWeight: 100_000,
+                maxBlockSigopsCost: 20_000
+            );
+
+            var buriedDeployments = new BuriedDeploymentsArray
+            {
+                [BuriedDeployments.BIP34] = 0,
+                [BuriedDeployments.BIP65] = 0,
+                [BuriedDeployments.BIP66] = 0
+            };
+
+            var bip9Deployments = new BIP9DeploymentsArray();
+
+            this.Consensus = new X42Consensus(
+                consensusFactory: consensusFactory,
+                consensusOptions: consensusOptions,
+                coinType: 424242,
+                hashGenesisBlock: genesisBlock.GetHash(),
+                subsidyHalvingInterval: 210000,
+                majorityEnforceBlockUpgrade: 750,
+                majorityRejectBlockOutdated: 950,
+                majorityWindow: 1000,
+                buriedDeployments: buriedDeployments,
+                bip9Deployments: bip9Deployments,
+                bip34Hash: new uint256("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8"),
+                ruleChangeActivationThreshold: 1916, // 95% of 2016
+                minerConfirmationWindow: 2016, // nPowTargetTimespan / nPowTargetSpacing
+                maxReorgLength: 500,
+                defaultAssumeValid: null,
+                maxMoney: Money.Coins(42 * 1000000),
+                coinbaseMaturity: 50,
+                premineHeight: 2,
+                premineReward: Money.Coins(10.5m * 1000000),
+                proofOfWorkReward: Money.Zero,
+                powTargetTimespan: TimeSpan.FromSeconds(14 * 24 * 60 * 60), // two weeks
+                powTargetSpacing: TimeSpan.FromSeconds(60),
+                powAllowMinDifficultyBlocks: false,
+                powNoRetargeting: false,
+                powLimit: new Target(new uint256("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")),
+                minimumChainWork: null,
+                isProofOfStake: true,
+                lastPowBlock: 523,
+                proofOfStakeLimitV2: new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false)),
+                proofOfStakeReward: Money.Coins(20),
+                subsidyLimit: 550000,
+                proofOfStakeRewardAfterSubsidyLimit: Money.Coins(5),
+                lastProofOfStakeRewardHeight: 4652092
+            );
 
             this.Base58Prefixes = new byte[12][];
             this.Base58Prefixes[(int)Base58Type.PUBKEY_ADDRESS] = new byte[] { (75) };
@@ -93,7 +127,19 @@ namespace NBitcoin.Networks
             this.Base58Prefixes[(int)Base58Type.ASSET_ID] = new byte[] { 23 };
             this.Base58Prefixes[(int)Base58Type.COLORED_ADDRESS] = new byte[] { 0x13 };
 
-            this.Checkpoints = new Dictionary<int, CheckpointInfo>();
+            this.Checkpoints = new Dictionary<int, CheckpointInfo>
+            {
+                { 0, new CheckpointInfo(new uint256("0x04ffe583707a96c1c2eb54af33a4b1dc6d9d8e09fea8c9a7b097ba88f0cb64c4"), new uint256("0x0000000000000000000000000000000000000000000000000000000000000000")) }, // Genisis
+                { 2, new CheckpointInfo(new uint256("0x1a64847f52fce72763a9eaa99bed6a896556917cd16f491bbdec070b40514282"), new uint256("0xa55d7663540264e7ed1e7195ecd0050303187eaf9485edeec70806491b5a53d1")) }, // Premine
+                { 523, new CheckpointInfo(new uint256("0x1ca01c02f5989a198433cbe83e0eb26d9166d6aaaa9c20d6b765d5bace7829f1"), new uint256("0xbf04ecd478d78d302aa65293dde85036954b76216b0812104315c8a5ad139525")) }, // Last POW Block
+                { 20000, new CheckpointInfo(new uint256("0x79976dfc025e982239a0bd62099475e6abf839c73aba5805b5cbe4091744c09a"), new uint256("0x250690dd6f264565c5ce16d84d250d67eb940d084c253e4006cdba3091fd66b6")) },
+            };
+
+            var encoder = new Bech32Encoder("bc");
+            this.Bech32Encoders = new Bech32Encoder[2];
+            this.Bech32Encoders[(int)Bech32Type.WITNESS_PUBKEY_ADDRESS] = encoder;
+            this.Bech32Encoders[(int)Bech32Type.WITNESS_SCRIPT_ADDRESS] = encoder;
+
             this.DNSSeeds = new List<DNSSeedData>
             {
                 new DNSSeedData("seednode1.x42.tech", "seednode1.x42.tech"),
@@ -102,16 +148,7 @@ namespace NBitcoin.Networks
 
             string[] seedNodes = { "67.214.249.184" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
-                       
-            // Create the genesis block.
-            this.GenesisTime = 1533106324;
-            this.GenesisNonce = 246101626;
-            this.GenesisBits = 0x1e0fffff;
-            this.GenesisVersion = 1;
-            this.GenesisReward = Money.Zero;
 
-            this.Genesis = CreateX42GenesisBlock(this.Consensus.ConsensusFactory, this.GenesisTime, this.GenesisNonce, this.GenesisBits, this.GenesisVersion, this.GenesisReward);
-            this.Consensus.HashGenesisBlock = this.Genesis.GetHash();
             Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x04ffe583707a96c1c2eb54af33a4b1dc6d9d8e09fea8c9a7b097ba88f0cb64c4"));
             Assert(this.Genesis.Header.HashMerkleRoot == uint256.Parse("0x6e3439a32382f83dee4f94a6f8bdd38908bcf0c82ec09aba85c5321357f01f67"));
         }

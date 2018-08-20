@@ -7,9 +7,6 @@
     {
         PROTOCOL_VERSION = 420012,
 
-        /// <summary>
-        /// x42 Protocol version.
-        /// </summary>
         X42_PROTOCOL_VERSION = 420000,
 
         /// <summary>

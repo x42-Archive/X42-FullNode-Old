@@ -12,25 +12,25 @@ using Stratis.Bitcoin.Utilities.Extensions;
 namespace Stratis.Bitcoin.Features.Apps
 {
     /// <summary>
-    /// Responsible for storing x42Apps as read from the current running x42 folder.
+    /// Responsible for storing StratisApps as read from the current running Stratis folder.
     /// </summary>
     public class AppsStore : IAppsStore
     {
         private readonly ILogger logger;
         private List<IStratisApp> applications;
         private readonly DataFolder dataFolder;
-        private const string ConfigFileName = "x42App.json";
+        private const string ConfigFileName = "stratisApp.json";
 
         public AppsStore(ILoggerFactory loggerFactory, DataFolder dataFolder)
         {
             this.dataFolder = dataFolder;
-            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
+            this.logger = loggerFactory.CreateLogger(this.GetType().FullName);            
         }
 
         public IEnumerable<IStratisApp> Applications
         {
             get
-            {
+            {                
                 this.Load();
 
                 return this.applications;
@@ -46,11 +46,6 @@ namespace Stratis.Bitcoin.Features.Apps
 
                 this.applications = new List<IStratisApp>();
 
-                if (!Directory.Exists(this.dataFolder.ApplicationsPath))
-                {
-                    Directory.CreateDirectory(this.dataFolder.ApplicationsPath);
-                }
-
                 FileInfo[] fileInfos = new DirectoryInfo(this.dataFolder.ApplicationsPath)
                     .GetFiles(ConfigFileName, SearchOption.AllDirectories);
 
@@ -60,11 +55,11 @@ namespace Stratis.Bitcoin.Features.Apps
                 this.applications.AddRange(apps.Where(x => x != null));
 
                 if (this.applications.IsEmpty())
-                    this.logger.LogWarning("No x42 applications found at or below {0}", this.dataFolder.ApplicationsPath);
+                    this.logger.LogWarning("No Stratis applications found at or below {0}", this.dataFolder.ApplicationsPath);
             }
             catch (Exception e)
             {
-                this.logger.LogError("Failed to load x42 apps :{0}", e.Message);
+                this.logger.LogError("Failed to load Stratis apps :{0}", e.Message);
             }
         }
 

@@ -17,7 +17,5 @@ namespace Stratis.Bitcoin.Tests.Common
         public static Network StratisTest => NetworkRegistration.GetNetwork("StratisTest") ?? NetworkRegistration.Register(new StratisTest());
 
         public static Network StratisRegTest => NetworkRegistration.GetNetwork("StratisRegTest") ?? NetworkRegistration.Register(new StratisRegTest());
-
-        public static Network x42Main => NetworkRegistration.GetNetwork("x42Main") ?? NetworkRegistration.Register(new x42Main());
     }
 }

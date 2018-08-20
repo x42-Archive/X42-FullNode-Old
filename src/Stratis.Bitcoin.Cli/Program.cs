@@ -96,11 +96,6 @@ namespace Stratis.Bitcoin.Cli
                     defaultRestApiPort = 37221;
                     network = NetworkRegistration.Register(new StratisMain());
                 }
-                else if (networkName.Contains("x42"))
-                {
-                    defaultRestApiPort = 42220;
-                    network = NetworkRegistration.Register(new x42Main());
-                }
                 else
                 {
                     defaultRestApiPort = 37220;
