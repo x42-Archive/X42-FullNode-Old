@@ -70,7 +70,7 @@ namespace Stratis.Bitcoin.Properties {
         ///                                 4::::44::::4  2222222     2:::::2 
         ///            xxxxxxx      xxxxxxx4::::4 4::::4              2:::::2 
         ///             x:::::x    x:::::x4::::4  4::::4              2:::::2 
-        ///       [rest of string was truncated]&quot;;.
+        ///        [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string AsciiLogo {
             get {

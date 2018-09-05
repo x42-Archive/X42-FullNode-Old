@@ -22,7 +22,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
 
         public override void BuildNode()
         {
-            var settings = new NodeSettings(this.Network, ProtocolVersion.X42_PROTOCOL_VERSION, args: new string[] { "-conf=stratis.conf", "-datadir=" + this.DataFolder });
+            var settings = new NodeSettings(this.Network, ProtocolVersion.ALT_PROTOCOL_VERSION, args: new string[] { "-conf=stratis.conf", "-datadir=" + this.DataFolder });
 
             this.FullNode = (FullNode)new FullNodeBuilder()
                             .UseNodeSettings(settings)
@@ -33,6 +33,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
                             .UseWallet()
                             .UseApi()
                             .AddRPC()
+                            .MockIBD()
                             .Build();
         }
 
