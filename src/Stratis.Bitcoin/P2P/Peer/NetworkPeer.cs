@@ -728,9 +728,9 @@ namespace Stratis.Bitcoin.P2P.Peer
                             if (!requirements.Check(versionPayload))
                             {
                                 this.logger.LogTrace("(-)[UNSUPPORTED_REQUIREMENTS]");
-                                //TODO: Need to find a better way to check versions for legacy.
-                                //this.Disconnect("The peer does not support the required services requirement");
-                                //return;
+                                // TODO: Need to find a better way to check versions for legacy.
+                                this.Disconnect("The peer does not support the required services requirement");
+                                return;
                             }
 
                             this.logger.LogTrace("Sending version acknowledgement.");
