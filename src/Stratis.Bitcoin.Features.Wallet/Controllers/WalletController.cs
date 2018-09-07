@@ -333,6 +333,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
             try
             {
                 Wallet wallet = this.walletManager.GetWallet(request.Name);
+                int? highestChain = this.connectionManager?.ConnectedPeers.Max(a => a.Behavior<Bitcoin.Consensus.ConsensusManagerBehavior>().ExpectedPeerTip.Height);
 
                 var model = new WalletGeneralInfoModel
                 {
@@ -340,7 +341,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     CreationTime = wallet.CreationTime,
                     LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
-                    ChainTip = this.chain.Tip.Height,
+                    ChainTip = highestChain,
                     IsChainSynced = this.chain.IsDownloaded(),
                     IsDecrypted = true
                 };
