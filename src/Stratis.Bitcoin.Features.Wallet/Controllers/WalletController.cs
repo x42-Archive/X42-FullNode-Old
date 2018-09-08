@@ -340,7 +340,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     CreationTime = wallet.CreationTime,
                     LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
-                    ChainTip = this.connectionManager.GetHighestTip(),
+                    ChainTip = this.connectionManager.GetHighestPeerHeight(),
                     IsChainSynced = this.chain.IsDownloaded(),
                     IsDecrypted = true
                 };

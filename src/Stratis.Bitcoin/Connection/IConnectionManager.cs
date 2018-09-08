@@ -48,7 +48,7 @@ namespace Stratis.Bitcoin.Connection
         /// <summary>Notifies other components about peer being disconnected.</summary>
         void PeerDisconnected(int networkPeerId);
 
-        int GetHighestTip();
+        int GetHighestPeerHeight();
 
         string GetNodeStats();
 
