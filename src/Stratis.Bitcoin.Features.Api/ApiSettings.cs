@@ -19,9 +19,6 @@ namespace Stratis.Bitcoin.Features.Api
         /// <summary>The default port used by the API when the node runs on the Stratis network.</summary>
         public const int DefaultStratisApiPort = 37221;
 
-        /// <summary>The default port used by the API when the node runs on the Stratis network.</summary>
-        public const int Defaultx42ApiPort = 42220;
-
         /// <summary>The default port used by the API when the node runs on the bitcoin testnet network.</summary>
         public const int TestBitcoinApiPort = 38220;
 
@@ -127,12 +124,8 @@ namespace Stratis.Bitcoin.Features.Api
         {
             if (network.IsBitcoin())
                 return network.IsTest() ? TestBitcoinApiPort : DefaultBitcoinApiPort;
-            if (network.IsStratis())
-                return network.IsTest() ? TestStratisApiPort : DefaultStratisApiPort;
-            if (network.Isx42())
-                return network.IsTest() ? TestBitcoinApiPort : Defaultx42ApiPort;
-
-            throw new Exception("Network could not be found to start API.");
+            
+            return network.IsTest() ? TestStratisApiPort : DefaultStratisApiPort;
         }
 
         /// <summary>Prints the help information on how to configure the API settings to the logger.</summary>
