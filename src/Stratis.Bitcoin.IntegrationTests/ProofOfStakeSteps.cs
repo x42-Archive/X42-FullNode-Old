@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using NBitcoin;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Features.Miner.Staking;
@@ -24,8 +23,9 @@ namespace Stratis.Bitcoin.IntegrationTests
         public readonly string PremineWallet = "preminewallet";
         public readonly string PremineWalletAccount = "account 0";
         public readonly string PremineWalletPassword = "preminewalletpassword";
+        public readonly string PremineWalletPassphrase = "";
 
-        private HashSet<uint256> transactionsBeforeStaking = new HashSet<uint256>();
+        private readonly HashSet<uint256> transactionsBeforeStaking = new HashSet<uint256>();
 
         public ProofOfStakeSteps(string displayName)
         {
@@ -51,7 +51,7 @@ namespace Stratis.Bitcoin.IntegrationTests
                     .CreateStratisPosNode(this.PremineNode)
                     .Start()
                     .NotInIBD()
-                    .WithWallet(this.PremineWallet, this.PremineWalletPassword)
+                    .WithWallet(this.PremineWallet, this.PremineWalletPassword, this.PremineWalletPassphrase)
                     .Build();
         }
 

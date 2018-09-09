@@ -23,6 +23,7 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
         private List<uint256> blockIds;
         private IList<Block> retrievedBlocks;
         private string password = "P@ssw0rd";
+        private string passphrase = "p@ssphr@se";
         private WalletAccountReference miningWalletAccountReference;
         private HdAddress minerAddress;
         private Features.Wallet.Wallet miningWallet;
@@ -73,14 +74,14 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
             this.transactionNode.CreateRPCClient().AddNode(this.node.Endpoint, true);
             this.sharedSteps.WaitForNodeToSync(this.node, this.transactionNode);
 
-            this.transactionNode.FullNode.WalletManager().CreateWallet(this.password, "receiver");
+            this.transactionNode.FullNode.WalletManager().CreateWallet(this.password, "receiver", this.passphrase);
             this.receiverAddress = this.transactionNode.FullNode.WalletManager()
                 .GetUnusedAddress(new WalletAccountReference("receiver", "account 0"));
         }
 
         private void a_miner_validating_blocks()
         {
-            this.node.FullNode.WalletManager().CreateWallet(this.password, "miner");
+            this.node.FullNode.WalletManager().CreateWallet(this.password, "miner", this.passphrase);
             this.miningWalletAccountReference = new WalletAccountReference("miner", "account 0");
             this.minerAddress = this.node.FullNode.WalletManager().GetUnusedAddress(this.miningWalletAccountReference);
             this.miningWallet = this.node.FullNode.WalletManager().GetWalletByName("miner");
@@ -148,7 +149,7 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
         private void trying_to_retrieve_the_blocks_from_the_blockstore()
         {
             this.retrievedBlocks = this.blockIds.Concat(new[] { this.wrongBlockId })
-                .Select(id => this.node.FullNode.BlockStoreManager().BlockRepository.GetAsync(id).GetAwaiter().GetResult()).Select(b => b).ToList();
+                .Select(id => this.node.FullNode.BlockStore().GetBlockAsync(id).GetAwaiter().GetResult()).Select(b => b).ToList();
 
             this.retrievedBlocks.Count(b => b != null).Should().Be(this.blockIds.Count);
             this.retrievedBlocks.Count(b => b == null).Should().Be(1);
@@ -159,15 +160,15 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
 
         private void trying_to_retrieve_the_transactions_by_Id_from_the_blockstore()
         {
-            this.retrievedTransaction = this.node.FullNode.BlockStoreManager().BlockRepository.GetTrxAsync(this.transaction.GetHash()).GetAwaiter().GetResult();
-            this.wontRetrieveTransaction = this.node.FullNode.BlockStoreManager().BlockRepository.GetTrxAsync(this.wrongTransactionId).GetAwaiter().GetResult();
+            this.retrievedTransaction = this.node.FullNode.BlockStore().GetTrxAsync(this.transaction.GetHash()).GetAwaiter().GetResult();
+            this.wontRetrieveTransaction = this.node.FullNode.BlockStore().GetTrxAsync(this.wrongTransactionId).GetAwaiter().GetResult();
         }
 
         private void trying_to_retrieve_the_block_containing_the_transactions_from_the_blockstore()
         {
-            this.retrievedBlockId = this.node.FullNode.BlockStoreManager().BlockRepository
+            this.retrievedBlockId = this.node.FullNode.BlockStore()
                 .GetTrxBlockIdAsync(this.transaction.GetHash()).GetAwaiter().GetResult();
-            this.wontRetrieveBlockId = this.node.FullNode.BlockStoreManager().BlockRepository
+            this.wontRetrieveBlockId = this.node.FullNode.BlockStore()
                 .GetTrxAsync(this.wrongTransactionId).GetAwaiter().GetResult();
         }
 

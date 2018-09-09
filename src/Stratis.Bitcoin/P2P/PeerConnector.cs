@@ -98,7 +98,7 @@ namespace Stratis.Bitcoin.P2P
         private readonly TimeSpan defaultConnectionInterval;
 
         /// <summary>Burst time interval between making a connection attempt.</summary>
-        private readonly TimeSpan burstConnectionInterval;
+        protected TimeSpan burstConnectionInterval;
 
         /// <summary>Maintains a list of connected peers and ensures their proper disposal.</summary>
         private readonly NetworkPeerDisposer networkPeerDisposer;
@@ -140,7 +140,7 @@ namespace Stratis.Bitcoin.P2P
             this.connectedPeers = connectionManager.ConnectedPeers;
 
             this.CurrentParameters = connectionManager.Parameters.Clone();
-            this.CurrentParameters.TemplateBehaviors.Add(new ConnectionManagerBehavior(false, connectionManager, this.loggerFactory));
+            this.CurrentParameters.TemplateBehaviors.Add(new ConnectionManagerBehavior(connectionManager, this.loggerFactory));
 
             this.OnInitialize();
         }

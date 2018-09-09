@@ -13,6 +13,7 @@ using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Connection;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Utilities;
 
@@ -58,9 +59,6 @@ namespace Stratis.Bitcoin
 
         /// <summary>Component responsible for connections to peers in P2P network.</summary>
         public IConnectionManager ConnectionManager { get; set; }
-
-        /// <summary>Selects the best available chain based on tips provided by the peers and switches to it.</summary>
-        private BestChainSelector bestChainSelector;
 
         /// <summary>Best chain of block headers from genesis.</summary>
         public ConcurrentChain Chain { get; set; }
@@ -173,7 +171,6 @@ namespace Stratis.Bitcoin
             this.InitialBlockDownloadState = this.Services.ServiceProvider.GetService<IInitialBlockDownloadState>();
 
             this.ConnectionManager = this.Services.ServiceProvider.GetService<IConnectionManager>();
-            this.bestChainSelector = this.Services.ServiceProvider.GetService<BestChainSelector>();
             this.loggerFactory = this.Services.ServiceProvider.GetService<NodeSettings>().LoggerFactory;
 
             this.AsyncLoopFactory = this.Services.ServiceProvider.GetService<IAsyncLoopFactory>();
@@ -213,7 +210,8 @@ namespace Stratis.Bitcoin
             this.fullNodeFeatureExecutor.Initialize();
 
             // Initialize peer connection.
-            this.ConnectionManager.Initialize();
+            var consensusManager = this.Services.ServiceProvider.GetRequiredService<IConsensusManager>();
+            this.ConnectionManager.Initialize(consensusManager);
 
             // Fire INodeLifetime.Started.
             this.nodeLifetime.NotifyStarted();
@@ -277,7 +275,6 @@ namespace Stratis.Bitcoin
             this.nodeLifetime.StopApplication();
 
             this.ConnectionManager.Dispose();
-            this.bestChainSelector.Dispose();
 
             foreach (IDisposable disposable in this.Resources)
                 disposable.Dispose();
