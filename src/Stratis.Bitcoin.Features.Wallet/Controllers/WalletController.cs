@@ -341,7 +341,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
 <<<<<<< HEAD
+<<<<<<< HEAD
                     ChainTip = this.chain.Tip.Height,
+=======
+                    ChainTip = this.connectionManager.GetHighestTip(),
+>>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
 =======
                     ChainTip = this.connectionManager.GetHighestTip(),
 >>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight

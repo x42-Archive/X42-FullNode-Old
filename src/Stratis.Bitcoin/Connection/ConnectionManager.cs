@@ -212,6 +212,7 @@ namespace Stratis.Bitcoin.Connection
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         public string GetStats()
         {
             var builder = new StringBuilder();
@@ -254,6 +255,8 @@ namespace Stratis.Bitcoin.Connection
 
             return builder.ToString();
 =======
+=======
+>>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
         public int GetHighestTip()
         {
             var builder = new StringBuilder();
@@ -266,6 +269,9 @@ namespace Stratis.Bitcoin.Connection
             }
 
             return highestTip;
+<<<<<<< HEAD
+>>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
+=======
 >>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
         }
 
