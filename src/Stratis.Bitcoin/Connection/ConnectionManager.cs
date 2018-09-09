@@ -220,8 +220,8 @@ namespace Stratis.Bitcoin.Connection
                 peerConnector.Requirements.RequiredServices |= NetworkPeerServices.NODE_WITNESS;
                 foreach (INetworkPeer peer in peerConnector.ConnectorPeers)
                 {
-                    if (!peer.PeerVersion.Services.HasFlag(services))
-                        peer.Disconnect("The peer does not support the required services requirement.");
+                    // if (!peer.PeerVersion.Services.HasFlag(services))
+                    //    peer.Disconnect("The peer does not support the required services requirement.");
                 }
             }
 
