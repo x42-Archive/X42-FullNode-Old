@@ -342,7 +342,11 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
                     ChainTip = this.chain.Tip.Height,
+=======
+                    ChainTip = this.connectionManager.GetHighestTip(),
+>>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
 =======
                     ChainTip = this.connectionManager.GetHighestTip(),
 >>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
