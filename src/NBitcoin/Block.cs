@@ -171,16 +171,16 @@ namespace NBitcoin
             return block;
         }
 
-        public static Block Load(byte[] bytes, Network network)
+        public static Block Load(byte[] hex, Network network)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            if (hex == null)
+                throw new ArgumentNullException(nameof(hex));
 
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
 
             Block block = network.Consensus.ConsensusFactory.CreateBlock();
-            block.ReadWrite(bytes, network.Consensus.ConsensusFactory);
+            block.ReadWrite(hex, network.Consensus.ConsensusFactory);
 
             return block;
         }

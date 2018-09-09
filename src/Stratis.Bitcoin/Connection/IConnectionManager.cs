@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Configuration.Settings;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.P2P;
 using Stratis.Bitcoin.P2P.Peer;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
@@ -43,15 +42,12 @@ namespace Stratis.Bitcoin.Connection
 
         INetworkPeer FindNodeById(int peerId);
 
-        void RemoveConnectedPeer(INetworkPeer peer, string reason);
-
-        /// <summary>Notifies other components about peer being disconnected.</summary>
-        void PeerDisconnected(int networkPeerId);
-
         string GetNodeStats();
 
+        string GetStats();
+
         /// <summary>Initializes and starts each peer connection as well as peer discovery.</summary>
-        void Initialize(IConsensusManager consensusManager);
+        void Initialize();
 
         /// <summary>The network the node is running on.</summary>
         Network Network { get; }

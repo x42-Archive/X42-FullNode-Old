@@ -63,10 +63,9 @@ namespace Stratis.Bitcoin.IntegrationTests.RPC
             var walletManager = node.NodeService<IWalletManager>() as WalletManager;
 
             string password = "test";
-            string passphrase = "passphrase";
 
             // create the wallet
-            walletManager.CreateWallet(password, "test", passphrase);
+            walletManager.CreateWallet(password, "test");
 
             Assert.NotNull(fullNode.NodeService<IPosMinting>(true));
 

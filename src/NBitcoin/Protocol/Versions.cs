@@ -7,7 +7,7 @@
     {
         PROTOCOL_VERSION = 420012,
 
-        ALT_PROTOCOL_VERSION = 420000,
+        X42_PROTOCOL_VERSION = 420000,
 
         /// <summary>
         /// Initial protocol version, to be increased after version/verack negotiation.

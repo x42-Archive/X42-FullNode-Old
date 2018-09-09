@@ -122,7 +122,7 @@ namespace Stratis.Bitcoin.Connection
                     var connectionManagerBehavior = peer.Behavior<IConnectionManagerBehavior>();
                     if (connectionManagerBehavior != null)
                     {
-                        peerNode.Inbound = peer.Inbound;
+                        peerNode.Inbound = connectionManagerBehavior.Inbound;
                         peerNode.IsWhiteListed = connectionManagerBehavior.Whitelisted;
                     }
 

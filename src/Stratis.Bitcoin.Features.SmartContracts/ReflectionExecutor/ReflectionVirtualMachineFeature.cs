@@ -19,7 +19,11 @@ namespace Stratis.Bitcoin.Features.SmartContracts.ReflectionExecutor
 
         public override void Initialize()
         {
-            new ReflectionRuleRegistration().RegisterRules(this.network.Consensus);
+            ICollection<IConsensusRule> rulesToAdd = new ReflectionRuleRegistration().GetRules();
+            foreach (IConsensusRule rule in rulesToAdd)
+            {
+                this.network.Consensus.Rules.Add(rule);
+            }
 
             this.logger.LogInformation("Reflection Virtual Machine Injected.");
         }

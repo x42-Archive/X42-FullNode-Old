@@ -20,7 +20,6 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
         private const string SendingWalletName = "sending wallet";
         private const string ReceivingWalletName = "receiving wallet";
         private const string WalletPassword = "123456";
-        private const string WalletPassphrase = "passphrase";
         private const string AccountName = "account 0";
         private CoreNode sendingStratisBitcoinNode;
         private CoreNode receivingStratisBitcoinNode;
@@ -49,9 +48,9 @@ namespace Stratis.Bitcoin.IntegrationTests.BlockStore
         {
             IDictionary<string, CoreNode> nodeGroup = this.nodeGroupBuilder
                 .StratisPowNode("sending").Start().NotInIBD()
-                .WithWallet(SendingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(SendingWalletName, WalletPassword)
                 .StratisPowNode("receiving").Start().NotInIBD()
-                .WithWallet(ReceivingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(ReceivingWalletName, WalletPassword)
                 .WithConnections()
                 .Connect("sending", "receiving")
                 .AndNoMoreConnections()

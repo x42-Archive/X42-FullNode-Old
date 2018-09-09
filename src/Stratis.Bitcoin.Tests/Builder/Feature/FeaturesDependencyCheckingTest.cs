@@ -2,7 +2,6 @@
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration;
-using Stratis.Bitcoin.Features.Consensus;
 using Stratis.Bitcoin.Tests.Common;
 using Xunit;
 
@@ -75,7 +74,7 @@ namespace Stratis.Bitcoin.Tests.Builder.Feature
                     .DependOn<FeatureB>();
             });
 
-            builder.UsePosConsensus().Build();
+            builder.Build();
         }
 
         /// <summary>

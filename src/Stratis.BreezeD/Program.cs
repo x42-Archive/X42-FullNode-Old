@@ -35,7 +35,7 @@ namespace Stratis.BreezeD
                     if (isTestNet)
                         args = args.Append("-addnode=51.141.28.47").ToArray(); // TODO: fix this temp hack
 
-                    nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, agent, args:args);
+                    nodeSettings = new NodeSettings(network, ProtocolVersion.X42_PROTOCOL_VERSION, agent, args:args);
                 }
                 else
                 {

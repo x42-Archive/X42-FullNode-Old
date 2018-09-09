@@ -84,17 +84,8 @@ namespace Stratis.Bitcoin.Networks
         public ConsensusFactory ConsensusFactory { get; }
 
         /// <inheritdoc />
-        public List<IIntegrityValidationConsensusRule> IntegrityValidationRules { get; set; }
+        public ICollection<IConsensusRule> Rules { get; set; }
 
-        /// <inheritdoc />
-        public List<IHeaderValidationConsensusRule> HeaderValidationRules { get; set; }
-
-        /// <inheritdoc />
-        public List<IPartialValidationConsensusRule> PartialValidationRules { get; set; }
-
-        /// <inheritdoc />
-        public List<IFullValidationConsensusRule> FullValidationRules { get; set; }
-        
         public Money ProofOfStakeRewardAfterSubsidyLimit { get; }
 
         public long SubsidyLimit { get; }
@@ -138,10 +129,7 @@ namespace Stratis.Bitcoin.Networks
             Money lastProofOfStakeRewardHeight
             )
         {
-            this.IntegrityValidationRules = new List<IIntegrityValidationConsensusRule>();
-            this.HeaderValidationRules = new List<IHeaderValidationConsensusRule>();
-            this.PartialValidationRules = new List<IPartialValidationConsensusRule>();
-            this.FullValidationRules = new List<IFullValidationConsensusRule>();
+            this.Rules = new List<IConsensusRule>();
             this.CoinbaseMaturity = coinbaseMaturity;
             this.PremineReward = premineReward;
             this.PremineHeight = premineHeight;

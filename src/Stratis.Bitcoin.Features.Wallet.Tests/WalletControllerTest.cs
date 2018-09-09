@@ -228,7 +228,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 Name = "myName",
                 FolderPath = "",
                 Password = "",
-                Passphrase = "",
                 Network = ""
             });
 
@@ -279,7 +278,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 Name = "myName",
                 FolderPath = "",
                 Password = "",
-                Passphrase = "",
                 Network = ""
             });
 
@@ -307,7 +305,6 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 Name = "myName",
                 FolderPath = "",
                 Password = "",
-                Passphrase = "",
                 Network = ""
             });
 

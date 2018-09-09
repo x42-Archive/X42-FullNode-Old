@@ -1,5 +1,4 @@
 ﻿using NBitcoin;
-using Stratis.SmartContracts.Core;
 
 namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
 {
@@ -17,17 +16,10 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
         private uint256 receiptRoot;
         public uint256 ReceiptRoot { get { return this.receiptRoot; } set { this.receiptRoot = value; }  }
 
-        /// <summary>
-        /// Bitwise-OR of all the blooms generated from all of the smart contract transactions in the block.
-        /// </summary>
-        private Bloom logsBloom;
-        public Bloom LogsBloom { get { return this.logsBloom; } set { this.logsBloom = value; } }
-
         public SmartContractBlockHeader() : base()
         {
             this.hashStateRoot = 0;
             this.receiptRoot = 0;
-            this.logsBloom = new Bloom();
         }
 
         /// <summary>
@@ -38,7 +30,6 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
             base.ReadWrite(stream);
             stream.ReadWrite(ref this.hashStateRoot);
             stream.ReadWrite(ref this.receiptRoot);
-            stream.ReadWrite(ref this.logsBloom);
         }
     }
 }

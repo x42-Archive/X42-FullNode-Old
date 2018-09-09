@@ -1,23 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
-using Stratis.Bitcoin.Networks;
+using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 {
     /// <summary>
-    /// Check that a <see cref="BitcoinMain" /> network block has the correct version according to the defined active deployments.
+    /// Check that a <see cref="BitcoinMain"/> network block has the correct version according to the defined active deployments.
     /// </summary>
-    public class BitcoinActivationRule : HeaderValidationConsensusRule
+    [HeaderValidationRule]
+    public class BitcoinActivationRule : ConsensusRule
     {
         /// <inheritdoc />
         /// <exception cref="ConsensusErrors.BadVersion">Thrown if block's version is outdated.</exception>
-        public override void Run(RuleContext context)
+        public override Task RunAsync(RuleContext context)
         {
-            BlockHeader header = context.ValidationContext.ChainedHeaderToValidate.Header;
+            Guard.NotNull(context.ConsensusTip, nameof(context.ConsensusTip));
 
-            int height = context.ValidationContext.ChainedHeaderToValidate.Height;
+            BlockHeader header = context.ValidationContext.ChainedHeader.Header;
+
+            int height = context.ConsensusTipHeight + 1;
 
             // Reject outdated version blocks when 95% (75% on testnet) of the network has upgraded:
             // check for version 2, 3 and 4 upgrades.
@@ -29,6 +32,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 this.Logger.LogTrace("(-)[BAD_VERSION]");
                 ConsensusErrors.BadVersion.Throw();
             }
+
+            return Task.CompletedTask;
         }
     }
 }

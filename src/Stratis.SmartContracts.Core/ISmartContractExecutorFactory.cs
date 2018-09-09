@@ -5,7 +5,7 @@ namespace Stratis.SmartContracts.Core
     public interface ISmartContractExecutorFactory
     {
         ISmartContractExecutor CreateExecutor(
-            IContractState stateRepository,
+            IContractStateRepository stateRepository,
             ISmartContractTransactionContext transactionContext);
     }
 }

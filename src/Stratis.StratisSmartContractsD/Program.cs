@@ -28,7 +28,7 @@ namespace Stratis.StratisSmartContractsD
             try
             {
                 Network network = NetworkRegistration.Register(new SmartContractPosTest());
-                NodeSettings nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, "StratisSC", args: args);
+                NodeSettings nodeSettings = new NodeSettings(network, ProtocolVersion.X42_PROTOCOL_VERSION, "StratisSC", args: args);
 
                 Bitcoin.IFullNode node = new FullNodeBuilder()
                     .UseNodeSettings(nodeSettings)

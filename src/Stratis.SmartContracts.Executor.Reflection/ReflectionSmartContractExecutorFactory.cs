@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Stratis.SmartContracts.Core;
 using Stratis.SmartContracts.Core.State;
-using Stratis.SmartContracts.Executor.Reflection.Serialization;
 
 namespace Stratis.SmartContracts.Executor.Reflection
 {
@@ -14,11 +13,9 @@ namespace Stratis.SmartContracts.Executor.Reflection
         private readonly ISmartContractResultRefundProcessor refundProcessor;
         private readonly ISmartContractResultTransferProcessor transferProcessor;
         private readonly ISmartContractVirtualMachine vm;
-        private readonly IContractPrimitiveSerializer contractPrimitiveSerializer;
         private readonly ICallDataSerializer serializer;
 
         public ReflectionSmartContractExecutorFactory(ILoggerFactory loggerFactory,
-            IContractPrimitiveSerializer contractPrimitiveSerializer,
             ICallDataSerializer serializer,
             ISmartContractResultRefundProcessor refundProcessor,
             ISmartContractResultTransferProcessor transferProcessor,
@@ -28,7 +25,6 @@ namespace Stratis.SmartContracts.Executor.Reflection
             this.refundProcessor = refundProcessor;
             this.transferProcessor = transferProcessor;
             this.vm = vm;
-            this.contractPrimitiveSerializer = contractPrimitiveSerializer;
             this.serializer = serializer;
         }
 
@@ -39,10 +35,10 @@ namespace Stratis.SmartContracts.Executor.Reflection
         /// </para>
         /// </summary>
         public ISmartContractExecutor CreateExecutor(
-            IContractState stateRepository,
+            IContractStateRepository stateRepository,
             ISmartContractTransactionContext transactionContext)
         {
-            return new Executor(this.loggerFactory, this.contractPrimitiveSerializer, this.serializer, 
+            return new Executor(this.loggerFactory, this.serializer, 
                     stateRepository, this.refundProcessor, this.transferProcessor, this.vm);
         }
     }

@@ -156,7 +156,7 @@ namespace Stratis.Bitcoin.P2P.Peer
         public bool Inbound { get; private set; }
 
         /// <inheritdoc/>
-        public List<INetworkPeerBehavior> Behaviors { get; private set; }
+        public NetworkPeerBehaviorsCollection Behaviors { get; private set; }
 
         /// <inheritdoc/>
         public IPEndPoint PeerEndPoint { get; private set; }
@@ -288,13 +288,13 @@ namespace Stratis.Bitcoin.P2P.Peer
             this.RemoteSocketPort = this.RemoteSocketEndpoint.Port;
 
             this.Network = network;
-            this.Behaviors = new List<INetworkPeerBehavior>();
+            this.Behaviors = new NetworkPeerBehaviorsCollection(this);
             this.selfEndpointTracker = selfEndpointTracker;
 
             this.onDisconnectedAsyncContext = new AsyncLocal<DisconnectedExecutionAsyncContext>();
 
             this.ConnectionParameters = parameters ?? new NetworkPeerConnectionParameters();
-            this.MyVersion = this.ConnectionParameters.CreateVersion(this.selfEndpointTracker.MyExternalAddress, this.PeerEndPoint, network, this.dateTimeProvider.GetTimeOffset());
+            this.MyVersion = this.ConnectionParameters.CreateVersion(this.PeerEndPoint, network, this.dateTimeProvider.GetTimeOffset());
 
             this.MessageReceived = new AsyncExecutionEvent<INetworkPeer, IncomingMessage>();
             this.StateChanged = new AsyncExecutionEvent<INetworkPeer, NetworkPeerState>();
@@ -645,18 +645,13 @@ namespace Stratis.Bitcoin.P2P.Peer
             this.advertize = parameters.Advertize;
             this.preferredTransactionOptions = parameters.PreferredTransactionOptions;
 
+            this.Behaviors.DelayAttach = true;
             foreach (INetworkPeerBehavior behavior in parameters.TemplateBehaviors)
             {
                 this.Behaviors.Add(behavior.Clone());
             }
 
-            if ((this.State == NetworkPeerState.Connected) || (this.State == NetworkPeerState.HandShaked))
-            {
-                foreach (INetworkPeerBehavior behavior in this.Behaviors)
-                {
-                    behavior.Attach(this);
-                }
-            }
+            this.Behaviors.DelayAttach = false;
 
             this.logger.LogTrace("(-)");
         }
@@ -728,14 +723,12 @@ namespace Stratis.Bitcoin.P2P.Peer
                             if (!requirements.Check(versionPayload))
                             {
                                 this.logger.LogTrace("(-)[UNSUPPORTED_REQUIREMENTS]");
-                                //TODO: Need to find a better way to check versions for legacy.
-                                //this.Disconnect("The peer does not support the required services requirement");
-                                //return;
+                                this.Disconnect("The peer does not support the required services requirement");
+                                return;
                             }
 
                             this.logger.LogTrace("Sending version acknowledgement.");
                             await this.SendMessageAsync(new VerAckPayload(), cancellationToken).ConfigureAwait(false);
-                            this.selfEndpointTracker.UpdateAndAssignMyExternalAddress(versionPayload.AddressFrom, false);
                             break;
 
                         case VerAckPayload verAckPayload:
@@ -906,7 +899,7 @@ namespace Stratis.Bitcoin.P2P.Peer
         /// <inheritdoc />
         public T Behavior<T>() where T : INetworkPeerBehavior
         {
-            return this.Behaviors.OfType<T>().FirstOrDefault();
+            return this.Behaviors.Find<T>();
         }
     }
 }
