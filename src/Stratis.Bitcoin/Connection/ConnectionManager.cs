@@ -211,6 +211,7 @@ namespace Stratis.Bitcoin.Connection
             this.logger.LogTrace("(-)");
         }
 
+<<<<<<< HEAD
         public string GetStats()
         {
             var builder = new StringBuilder();
@@ -252,6 +253,20 @@ namespace Stratis.Bitcoin.Connection
             }
 
             return builder.ToString();
+=======
+        public int GetHighestTip()
+        {
+            var builder = new StringBuilder();
+            int highestTip = 0;
+
+            foreach (INetworkPeer peer in this.ConnectedPeers)
+            {
+                var chainHeadersBehavior = peer.Behavior<ConsensusManagerBehavior>();
+                highestTip = (chainHeadersBehavior.ExpectedPeerTip != null ? chainHeadersBehavior.ExpectedPeerTip.Height : peer.PeerVersion?.StartHeight) ?? 0;
+            }
+
+            return highestTip;
+>>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
         }
 
         public string GetNodeStats()
