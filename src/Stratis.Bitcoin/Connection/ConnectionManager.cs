@@ -228,22 +228,18 @@ namespace Stratis.Bitcoin.Connection
             this.logger.LogTrace("(-)");
         }
 
-        public int GetHighestPeerHeight()
+        public int GetHighestTip()
         {
             var builder = new StringBuilder();
-            int highestPeerHeight = 0;
+            int highestTip = 0;
 
             foreach (INetworkPeer peer in this.ConnectedPeers)
             {
                 var chainHeadersBehavior = peer.Behavior<ConsensusManagerBehavior>();
-                int peerHeight = (chainHeadersBehavior.ExpectedPeerTip != null ? chainHeadersBehavior.ExpectedPeerTip.Height : peer.PeerVersion?.StartHeight) ?? 0;
-                if (peerHeight > highestPeerHeight)
-                {
-                    highestPeerHeight = peerHeight;
-                }
+                highestTip = (chainHeadersBehavior.ExpectedPeerTip != null ? chainHeadersBehavior.ExpectedPeerTip.Height : peer.PeerVersion?.StartHeight) ?? 0;
             }
 
-            return highestPeerHeight;
+            return highestTip;
         }
 
         public string GetNodeStats()
