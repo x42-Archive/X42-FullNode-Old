@@ -2,20 +2,17 @@
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Features.Apps.Interfaces;
-using Stratis.Bitcoin.Features.Consensus;
 using Xunit;
 
 namespace Stratis.Bitcoin.Features.Apps.Tests
 {
     public class FullNodeBuilderExtensionsTests
     {
-        private readonly IFullNodeBuilder fullNodeBuilder;
+        private readonly FullNodeBuilder fullNodeBuilder;
 
         public FullNodeBuilderExtensionsTests()
         {
-            this.fullNodeBuilder = new FullNodeBuilder()
-                .UseNodeSettings(new NodeSettings())
-                .UsePosConsensus();
+            this.fullNodeBuilder = new FullNodeBuilder(new NodeSettings());
         }
 
         [Fact]

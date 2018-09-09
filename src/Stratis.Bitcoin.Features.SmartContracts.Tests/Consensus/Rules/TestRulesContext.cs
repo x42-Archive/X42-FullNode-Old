@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NBitcoin;
-using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Base.Deployments;
 using Stratis.Bitcoin.BlockPulling;
 using Stratis.Bitcoin.Configuration;
@@ -25,7 +24,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
     /// </summary>
     internal class TestRulesContext
     {
-        public ConsensusRuleEngine Consensus { get; set; }
+        public ConsensusRules Consensus { get; set; }
 
         public IDateTimeProvider DateTimeProvider { get; set; }
 
@@ -39,9 +38,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
 
         public ICheckpoints Checkpoints { get; set; }
 
-        public IChainState ChainState { get; set; }
-
-        public T CreateRule<T>() where T : ConsensusRuleBase, new()
+        public T CreateRule<T>() where T : ConsensusRule, new()
         {
             T rule = new T();
             rule.Parent = this.Consensus;
@@ -73,16 +70,16 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
             testRulesContext.DateTimeProvider = DateTimeProvider.Default;
 
             network.Consensus.Options = new ConsensusOptions();
-            new FullNodeBuilderConsensusExtension.PowConsensusRulesRegistration().RegisterRules(network.Consensus);
+            network.Consensus.Rules = new FullNodeBuilderConsensusExtension.PowConsensusRulesRegistration().GetRules();
 
             ConsensusSettings consensusSettings = new ConsensusSettings(testRulesContext.NodeSettings);
             testRulesContext.Checkpoints = new Checkpoints();
             testRulesContext.Chain = new ConcurrentChain(network);
-            testRulesContext.ChainState = new ChainState();
+
+            var lookAheadBlockPuller = new Mock<ILookaheadBlockPuller>();
 
             NodeDeployments deployments = new NodeDeployments(testRulesContext.Network, testRulesContext.Chain);
-            testRulesContext.Consensus = new PowConsensusRuleEngine(testRulesContext.Network, testRulesContext.LoggerFactory, testRulesContext.DateTimeProvider,
-                testRulesContext.Chain, deployments, consensusSettings, testRulesContext.Checkpoints, null, testRulesContext.ChainState, new InvalidBlockHashStore(new DateTimeProvider())).Register();
+            testRulesContext.Consensus = new PowConsensusRules(testRulesContext.Network, testRulesContext.LoggerFactory, testRulesContext.DateTimeProvider, testRulesContext.Chain, deployments, consensusSettings, testRulesContext.Checkpoints, null, lookAheadBlockPuller.Object).Register();
 
             return testRulesContext;
         }

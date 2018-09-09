@@ -1432,11 +1432,6 @@ namespace NBitcoin
             }
         }
 
-        public virtual bool IsProtocolTransaction()
-        {
-            return this.IsCoinBase;
-        }
-
         public static uint CURRENT_VERSION = 2;
         public static uint MAX_STANDARD_TX_SIZE = 100000;
 

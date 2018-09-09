@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using NBitcoin;
 using Stratis.Bitcoin.Utilities;
 
@@ -17,6 +18,18 @@ namespace Stratis.SmartContracts.Core
         private readonly uint160 sender;
 
         private readonly Money mempoolFee;
+
+        /// <inheritdoc />
+        public bool IsCreate
+        {
+            get { return this.contractTxOut.ScriptPubKey.IsSmartContractCreate(); }
+        }
+
+        /// <inheritdoc />
+        public bool IsCall
+        {
+            get { return this.contractTxOut.ScriptPubKey.IsSmartContractCall(); }
+        }
 
         /// <inheritdoc />
         public uint256 TransactionHash
@@ -43,10 +56,12 @@ namespace Stratis.SmartContracts.Core
         }
 
         /// <inheritdoc />
-        public byte[] Data
+        public IEnumerable<byte> ContractData
         {
-            get { return this.contractTxOut.ScriptPubKey.ToBytes(); }
+            get { return this.contractTxOut.ScriptPubKey.ToBytes().Skip(1); }
         }
+
+        public Script ScriptPubKey => this.contractTxOut.ScriptPubKey;
 
         /// <inheritdoc />
         public Money MempoolFee

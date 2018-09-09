@@ -183,7 +183,7 @@ BundleArtifacts/
 
 # Others
 ClientBin/
-[Ss]tyle[Cc]op.Cache
+[Ss]tyle[Cc]op.*
 ~$*
 *~
 *.dbmdl
@@ -252,3 +252,5 @@ ModelManifest.xml
 /src/Stratis.Bitcoin.Tests/Stratis.Bitcoin.Tests/TestData
 /src/Stratis.StratisD/Logs
 /src/Stratis.BitcoinD/Logs
+/src/x42.x42D/Properties/PublishProfiles/FolderProfile.pubxml
+/src/Stratis.Bitcoin.Apps.Browser/Properties/PublishProfiles/FolderProfile.pubxml

@@ -150,7 +150,7 @@ namespace Stratis.Bitcoin.Configuration
                 if (testNet && regTest)
                     throw new ConfigurationException("Invalid combination of regtest and testnet.");
 
-                if (protocolVersion == ProtocolVersion.ALT_PROTOCOL_VERSION)
+                if (protocolVersion == ProtocolVersion.X42_PROTOCOL_VERSION)
                     this.Network = testNet ? NetworkRegistration.Register(new StratisTest()) : regTest ? NetworkRegistration.Register(new StratisRegTest()) : NetworkRegistration.Register(new X42Main());
                 else
                     this.Network = testNet ? NetworkRegistration.Register(new BitcoinTest()) : regTest ? NetworkRegistration.Register(new BitcoinRegTest()) : NetworkRegistration.Register(new BitcoinMain());

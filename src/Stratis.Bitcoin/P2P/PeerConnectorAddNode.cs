@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
@@ -37,14 +36,8 @@ namespace Stratis.Bitcoin.P2P
         /// <inheritdoc/>
         public override void OnInitialize()
         {
-            // For the -addnode connector, effectively disable burst mode by preventing high frequency connection attempts.
-            // The initial -addnode list will all have their connection attempts made in parallel regardless, so this
-            // does not slow down the startup.
-            this.burstConnectionInterval = TimeSpans.Second;
-
             this.MaxOutboundConnections = this.ConnectionSettings.AddNode.Count;
 
-            // Add the endpoints from the -addnode arg to the address manager.
             foreach (IPEndPoint ipEndpoint in this.ConnectionSettings.AddNode)
             {
                 this.peerAddressManager.AddPeer(ipEndpoint.MapToIpv6(), IPAddress.Loopback);
@@ -68,18 +61,15 @@ namespace Stratis.Bitcoin.P2P
         /// </summary>
         public override async Task OnConnectAsync()
         {
-            await this.ConnectionSettings.AddNode.ForEachAsync(this.ConnectionSettings.MaxOutboundConnections, this.nodeLifetime.ApplicationStopping,
-                async (ipEndpoint, cancellation) =>
-                {
-                    if (this.nodeLifetime.ApplicationStopping.IsCancellationRequested)
-                        return;
+            foreach (IPEndPoint ipEndpoint in this.ConnectionSettings.AddNode)
+            {
+                if (this.nodeLifetime.ApplicationStopping.IsCancellationRequested)
+                    return;
 
-                    PeerAddress peerAddress = this.peerAddressManager.FindPeer(ipEndpoint);
-                    if (peerAddress != null && !this.IsPeerConnected(peerAddress.Endpoint))
-                    {
-                        await this.ConnectAsync(peerAddress).ConfigureAwait(false);
-                    }
-                }).ConfigureAwait(false);
+                PeerAddress peerAddress = this.peerAddressManager.FindPeer(ipEndpoint);
+                if ((peerAddress != null) && !this.IsPeerConnected(peerAddress.Endpoint))
+                    await this.ConnectAsync(peerAddress).ConfigureAwait(false);
+            }
         }
     }
 }

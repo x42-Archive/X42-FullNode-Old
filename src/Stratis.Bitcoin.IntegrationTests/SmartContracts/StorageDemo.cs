@@ -46,15 +46,6 @@ public class StorageDemo : SmartContract
         }
     }
 
-    public void TestSerializer()
-    {
-        int expected = 12345;
-        PersistentState.SetInt32("Int32", expected);
-        byte[] intBytes = PersistentState.GetByteArray("Int32");
-        int actual = Serializer.ToInt32(intBytes);
-        Assert(actual == expected);
-    }
-
     public void Increment()
     {
         Counter++;

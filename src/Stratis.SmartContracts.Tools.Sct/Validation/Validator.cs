@@ -107,7 +107,7 @@ namespace Stratis.SmartContracts.Tools.Sct.Validation
 
                 Console.WriteLine("Building ModuleDefinition");
 
-                IContractModuleDefinition moduleDefinition = SmartContractDecompiler.GetModuleDefinition(compilation, new DotNetCoreAssemblyResolver());
+                SmartContractDecompilation decompilation = SmartContractDecompiler.GetModuleDefinition(compilation, new DotNetCoreAssemblyResolver());
 
                 Console.WriteLine("ModuleDefinition built successfully");
                 Console.WriteLine();
@@ -115,7 +115,7 @@ namespace Stratis.SmartContracts.Tools.Sct.Validation
                 Console.WriteLine($"Validating file {file}...");
                 Console.WriteLine();
 
-                SmartContractValidationResult formatValidationResult = formatValidator.Validate(moduleDefinition.ModuleDefinition);
+                SmartContractValidationResult formatValidationResult = formatValidator.Validate(decompilation.ModuleDefinition);
 
                 validationData.FormatValid = formatValidationResult.IsValid;
 
@@ -125,7 +125,7 @@ namespace Stratis.SmartContracts.Tools.Sct.Validation
                         .Errors
                         .Select(e => new ValidationError { Message = e.Message }));
 
-                SmartContractValidationResult determinismValidationResult = determinismValidator.Validate(moduleDefinition);
+                SmartContractValidationResult determinismValidationResult = determinismValidator.Validate(decompilation);
 
                 validationData.DeterminismValid = determinismValidationResult.IsValid;
 
@@ -133,7 +133,7 @@ namespace Stratis.SmartContracts.Tools.Sct.Validation
                     .DeterminismValidationErrors
                     .AddRange(determinismValidationResult.Errors);
 
-                SmartContractValidationResult warningResult = warningValidator.Validate(moduleDefinition.ModuleDefinition);
+                SmartContractValidationResult warningResult = warningValidator.Validate(decompilation.ModuleDefinition);
 
                 validationData
                     .Warnings

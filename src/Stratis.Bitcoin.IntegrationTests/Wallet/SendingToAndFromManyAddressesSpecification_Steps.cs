@@ -29,7 +29,6 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
 
         private const string WalletName = "mywallet";
         private const string WalletPassword = "123456";
-        private const string WalletPassphrase = "passphrase";
         private const string WalletAccountName = "account 0";
         private const string NodeOne = "one";
         private const string NodeTwo = "two";
@@ -54,8 +53,8 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
         private void two_connected_nodes()
         {
             this.nodes = this.nodeGroupBuilder
-                .StratisPowNode(NodeOne).Start().NotInIBD().WithWallet(WalletName, WalletPassword, WalletPassphrase)
-                .StratisPowNode(NodeTwo).Start().NotInIBD().WithWallet(WalletName, WalletPassword, WalletPassphrase)
+                .StratisPowNode(NodeOne).Start().NotInIBD().WithWallet(WalletName, WalletPassword)
+                .StratisPowNode(NodeTwo).Start().NotInIBD().WithWallet(WalletName, WalletPassword)
                 .WithConnections()
                     .Connect(NodeOne, NodeTwo)
                     .AndNoMoreConnections()

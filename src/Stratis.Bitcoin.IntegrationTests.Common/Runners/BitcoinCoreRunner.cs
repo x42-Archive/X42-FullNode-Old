@@ -1,7 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using Stratis.Bitcoin.Tests.Common;
 
 namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
@@ -20,53 +18,21 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
 
         public new bool IsDisposed
         {
-            get
-            {
-                return this.process == null || (this.process?.HasExited == true);
-            }
+            get { return this.process == null && this.process.HasExited; }
         }
 
-        public override void Kill()
+        public new void Kill()
         {
-            TimeSpan duration = TimeSpan.FromSeconds(30);
-            TestHelper.WaitLoop(() =>
+            if (!this.IsDisposed)
             {
-                try
-                {
-                    if (this.IsDisposed) return true;
-
-                    this.process.Kill();
-                    this.process.WaitForExit(15000);
-
-                    return false;
-                }
-                catch (Exception e)
-                {
-                    return false;
-                }
-            }, cancellationToken: new CancellationTokenSource(duration).Token,
-                failureReason: $"Failed to kill {this.GetType()} process number:{this.process.Id} within {duration} seconds");
+                this.process.Kill();
+                this.process.WaitForExit();
+            }
         }
 
         public override void OnStart()
         {
-            string logMode = Debugger.IsAttached ? "-debug=net" : string.Empty;
-            TimeSpan duration = TimeSpan.FromSeconds(15);
-
-            TestHelper.WaitLoop(() =>
-            {
-                try
-                {
-                    this.process = Process.Start(new FileInfo(this.bitcoinDPath).FullName,
-                        $"-conf=bitcoin.conf -datadir={this.DataFolder} {logMode}");
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
-            }, cancellationToken: new CancellationTokenSource(duration).Token,
-                failureReason: $"Failed to start BitcoinD within {duration} seconds");
+            this.process = Process.Start(new FileInfo(this.bitcoinDPath).FullName, $"-conf=bitcoin.conf -datadir={this.DataFolder} -debug=net");
         }
 
         public override void BuildNode()

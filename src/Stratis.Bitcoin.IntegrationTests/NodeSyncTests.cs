@@ -1,17 +1,15 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using NBitcoin;
-using NBitcoin.BouncyCastle.Math;
-using NBitcoin.Networks;
 using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Features.RPC;
 using Stratis.Bitcoin.IntegrationTests.Common;
 using Stratis.Bitcoin.IntegrationTests.Common.Builders;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
-using Stratis.Bitcoin.Networks;
 using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Utilities.Extensions;
 using Xunit;
@@ -25,48 +23,8 @@ namespace Stratis.Bitcoin.IntegrationTests
 
         public NodeSyncTests()
         {
-            this.posNetwork = NetworkRegistration.Register(new StratisRegTestMaxReorg());
+            this.posNetwork = KnownNetworks.StratisRegTest;
             this.powNetwork = KnownNetworks.RegTest;
-        }
-
-        private class StratisRegTestMaxReorg : StratisRegTest
-        {
-            public StratisRegTestMaxReorg()
-            {
-                this.Consensus = new NBitcoin.Consensus(
-                consensusFactory: base.Consensus.ConsensusFactory,
-                consensusOptions: base.Consensus.Options,
-                coinType: 105,
-                hashGenesisBlock: base.GenesisHash,
-                subsidyHalvingInterval: 210000,
-                majorityEnforceBlockUpgrade: 750,
-                majorityRejectBlockOutdated: 950,
-                majorityWindow: 1000,
-                buriedDeployments: base.Consensus.BuriedDeployments,
-                bip9Deployments: base.Consensus.BIP9Deployments,
-                bip34Hash: new uint256("0x000000000000024b89b42a942fe0d9fea3bb44ab7bd1b19115dd6a759c0808b8"),
-                ruleChangeActivationThreshold: 1916, // 95% of 2016
-                minerConfirmationWindow: 2016, // nPowTargetTimespan / nPowTargetSpacing
-                maxReorgLength: 10,
-                defaultAssumeValid: null, // turn off assumevalid for regtest.
-                maxMoney: long.MaxValue,
-                coinbaseMaturity: 10,
-                premineHeight: 2,
-                premineReward: Money.Coins(98000000),
-                proofOfWorkReward: Money.Coins(4),
-                powTargetTimespan: TimeSpan.FromSeconds(14 * 24 * 60 * 60), // two weeks
-                powTargetSpacing: TimeSpan.FromSeconds(10 * 60),
-                powAllowMinDifficultyBlocks: true,
-                powNoRetargeting: true,
-                powLimit: base.Consensus.PowLimit,
-                minimumChainWork: null,
-                isProofOfStake: true,
-                lastPowBlock: 12500,
-                proofOfStakeLimit: new BigInteger(uint256.Parse("00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false)),
-                proofOfStakeLimitV2: new BigInteger(uint256.Parse("000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffff").ToBytes(false)),
-                proofOfStakeReward: Money.COIN
-            );
-            }
         }
 
         [Fact]
@@ -77,8 +35,6 @@ namespace Stratis.Bitcoin.IntegrationTests
                 CoreNode node1 = builder.CreateStratisPowNode(this.powNetwork);
                 CoreNode node2 = builder.CreateStratisPowNode(this.powNetwork);
                 builder.StartAll();
-                node1.NotInIBD();
-                node2.NotInIBD();
                 Assert.Empty(node1.FullNode.ConnectionManager.ConnectedPeers);
                 Assert.Empty(node2.FullNode.ConnectionManager.ConnectedPeers);
                 RPCClient rpc1 = node1.CreateRPCClient();
@@ -86,11 +42,11 @@ namespace Stratis.Bitcoin.IntegrationTests
                 Assert.Single(node1.FullNode.ConnectionManager.ConnectedPeers);
                 Assert.Single(node2.FullNode.ConnectionManager.ConnectedPeers);
 
-                var behavior = node1.FullNode.ConnectionManager.ConnectedPeers.First().Behaviors.OfType<IConnectionManagerBehavior>().FirstOrDefault();
-                Assert.False(behavior.AttachedPeer.Inbound);
+                var behavior = node1.FullNode.ConnectionManager.ConnectedPeers.First().Behaviors.Find<IConnectionManagerBehavior>();
+                Assert.False(behavior.Inbound);
                 Assert.True(behavior.OneTry);
-                behavior = node2.FullNode.ConnectionManager.ConnectedPeers.First().Behaviors.OfType<IConnectionManagerBehavior>().FirstOrDefault();
-                Assert.True(behavior.AttachedPeer.Inbound);
+                behavior = node2.FullNode.ConnectionManager.ConnectedPeers.First().Behaviors.Find<IConnectionManagerBehavior>();
+                Assert.True(behavior.Inbound);
                 Assert.False(behavior.OneTry);
             }
         }
@@ -205,6 +161,12 @@ namespace Stratis.Bitcoin.IntegrationTests
                 stratisSyncer.NotInIBD().WithWallet();
                 stratisReorg.NotInIBD().WithWallet();
 
+                // TODO: set the max allowed reorg threshold here
+                // assume a reorg of 10 blocks is not allowed.
+                stratisMiner.FullNode.ChainBehaviorState.MaxReorgLength = 10;
+                stratisSyncer.FullNode.ChainBehaviorState.MaxReorgLength = 10;
+                stratisReorg.FullNode.ChainBehaviorState.MaxReorgLength = 10;
+
                 stratisMiner.SetDummyMinerSecret(new BitcoinSecret(new Key(), stratisMiner.FullNode.Network));
                 stratisReorg.SetDummyMinerSecret(new BitcoinSecret(new Key(), stratisReorg.FullNode.Network));
 
@@ -225,9 +187,9 @@ namespace Stratis.Bitcoin.IntegrationTests
                 stratisSyncer.CreateRPCClient().RemoveNode(stratisReorg.Endpoint);
                 TestHelper.WaitLoop(() => !TestHelper.IsNodeConnected(stratisReorg));
 
-                stratisMiner.GenerateStratisWithMiner(11);
-                stratisReorg.GenerateStratisWithMiner(12);
-
+                Task<List<uint256>> t1 = Task.Run(() => stratisMiner.GenerateStratisWithMiner(11));
+                Task<List<uint256>> t2 = Task.Delay(1000).ContinueWith(t => stratisReorg.GenerateStratisWithMiner(12));
+                Task.WaitAll(t1, t2);
                 TestHelper.WaitLoop(() => TestHelper.IsNodeSynced(stratisMiner));
                 TestHelper.WaitLoop(() => TestHelper.IsNodeSynced(stratisReorg));
 
@@ -338,16 +300,15 @@ namespace Stratis.Bitcoin.IntegrationTests
             const string node2 = "networkNode2";
             const string walletName = "dummyWallet";
             const string walletPassword = "dummyPassword";
-            const string walletPassphrase = "dummyPassphrase";
 
             var sharedSteps = new SharedSteps();
             string testFolderPath = Path.Combine(this.GetType().Name, nameof(MiningNodeWithOneConnectionAlwaysSynced));
             using (var builder = new NodeGroupBuilder(testFolderPath, this.powNetwork))
             {
-                var nodes = builder.StratisPowNode(miner).Start().NotInIBD().WithWallet(walletName, walletPassword, walletPassphrase)
-                    .StratisPowNode(connector).Start().NotInIBD().WithWallet(walletName, walletPassword, walletPassphrase)
-                    .StratisPowNode(node1).Start().NotInIBD().WithWallet(walletName, walletPassword, walletPassphrase)
-                    .StratisPowNode(node2).Start().NotInIBD().WithWallet(walletName, walletPassword, walletPassphrase)
+                var nodes = builder.StratisPowNode(miner).Start().NotInIBD().WithWallet(walletName, walletPassword)
+                    .StratisPowNode(connector).Start().NotInIBD().WithWallet(walletName, walletPassword)
+                    .StratisPowNode(node1).Start().NotInIBD().WithWallet(walletName, walletPassword)
+                    .StratisPowNode(node2).Start().NotInIBD().WithWallet(walletName, walletPassword)
                     .WithConnections()
                     .Connect(miner, connector)
                     .Connect(connector, node1).Connect(connector, node2)
@@ -391,7 +352,7 @@ namespace Stratis.Bitcoin.IntegrationTests
                 sharedSteps.WaitForNodeToSync(nodes.Values.ToArray());
 
                 nodes.Values.All(n => n.FullNode.Chain.Height == networkHeight).Should()
-                    .BeTrue(because: "all nodes have synced to chain height");
+                    .BeTrue(because:"all nodes have synced to chain height");
 
                 Assert.Equal(nodes[node1].FullNode.Chain.Tip.HashBlock, nodes[miner].FullNode.Chain.Tip.HashBlock);
             }

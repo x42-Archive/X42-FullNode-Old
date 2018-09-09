@@ -24,9 +24,21 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
         private readonly Signals.Signals signals;
 
+        private readonly IBlockRepository blockRepository;
+
+        private readonly IBlockStoreCache blockStoreCache;
+
+        private readonly BlockStoreQueue blockStoreQueue;
+
+        private readonly BlockStoreManager blockStoreManager;
+
         private readonly BlockStoreSignaled blockStoreSignaled;
 
+        private readonly INodeLifetime nodeLifetime;
+
         private readonly IConnectionManager connectionManager;
+
+        private readonly NodeSettings nodeSettings;
 
         private readonly StoreSettings storeSettings;
 
@@ -38,27 +50,44 @@ namespace Stratis.Bitcoin.Features.BlockStore
         /// <summary>Factory for creating loggers.</summary>
         private readonly ILoggerFactory loggerFactory;
 
-        private readonly IBlockStoreQueue blockStoreQueue;
+        private readonly string name;
 
         public BlockStoreFeature(
             ConcurrentChain chain,
             IConnectionManager connectionManager,
             Signals.Signals signals,
+            IBlockRepository blockRepository,
+            IBlockStoreCache blockStoreCache,
+            BlockStoreQueue blockStoreQueue,
+            BlockStoreManager blockStoreManager,
             BlockStoreSignaled blockStoreSignaled,
+            INodeLifetime nodeLifetime,
+            NodeSettings nodeSettings,
             ILoggerFactory loggerFactory,
             StoreSettings storeSettings,
             IChainState chainState,
-            IBlockStoreQueue blockStoreQueue)
+            string name = "BlockStore")
         {
+            this.name = name;
             this.chain = chain;
-            this.blockStoreQueue = blockStoreQueue;
             this.signals = signals;
+            this.blockRepository = blockRepository;
+            this.blockStoreCache = blockStoreCache;
+            this.blockStoreQueue = blockStoreQueue;
+            this.blockStoreManager = blockStoreManager;
             this.blockStoreSignaled = blockStoreSignaled;
+            this.nodeLifetime = nodeLifetime;
             this.connectionManager = connectionManager;
+            this.nodeSettings = nodeSettings;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.loggerFactory = loggerFactory;
             this.storeSettings = storeSettings;
             this.chainState = chainState;
+        }
+
+        public virtual BlockStoreBehavior BlockStoreBehaviorFactory()
+        {
+            return new BlockStoreBehavior(this.chain, this.blockRepository, this.blockStoreCache, this.loggerFactory);
         }
 
         /// <inheritdoc />
@@ -68,9 +97,9 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             if (highestBlock != null)
             {
-                benchLogs.AppendLine($"BlockStore.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
+                benchLogs.AppendLine($"{this.name}.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
                                      highestBlock.Height.ToString().PadRight(8) +
-                                     $" BlockStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) +
+                                     $" {this.name}.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) +
                                      highestBlock.HashBlock);
             }
         }
@@ -85,22 +114,46 @@ namespace Stratis.Bitcoin.Features.BlockStore
         {
             this.logger.LogTrace("()");
 
-            this.connectionManager.Parameters.TemplateBehaviors.Add(new BlockStoreBehavior(this.chain, this.blockStoreQueue, this.chainState, this.loggerFactory));
+            this.connectionManager.Parameters.TemplateBehaviors.Add(this.BlockStoreBehaviorFactory());
 
-            // Signal to peers that this node can serve blocks.
+            // signal to peers that this node can serve blocks
             this.connectionManager.Parameters.Services = (this.storeSettings.Prune ? NetworkPeerServices.Nothing : NetworkPeerServices.Network) | NetworkPeerServices.NODE_WITNESS;
 
             this.signals.SubscribeForBlocksConnected(this.blockStoreSignaled);
 
+            this.blockRepository.InitializeAsync().GetAwaiter().GetResult();
+            this.blockStoreQueue.InitializeAsync().GetAwaiter().GetResult();
+
             this.logger.LogTrace("(-)");
+        }
+
+        /// <summary>
+        /// Prints command-line help.
+        /// </summary>
+        /// <param name="network">The network to extract values from.</param>
+        public static void PrintHelp(Network network)
+        {
+            StoreSettings.PrintHelp();
+        }
+
+        /// <summary>
+        /// Get the default configuration.
+        /// </summary>
+        /// <param name="builder">The string builder to add the settings to.</param>
+        /// <param name="network">The network to base the defaults off.</param>
+        public static void BuildDefaultConfigurationFile(StringBuilder builder, Network network)
+        {
+            StoreSettings.BuildDefaultConfigurationFile(builder, network);
         }
 
         /// <inheritdoc />
         public override void Dispose()
         {
-            this.logger.LogInformation("Stopping BlockStore...");
+            this.logger.LogInformation("Stopping {0}...", this.name);
 
             this.blockStoreSignaled.Dispose();
+            this.blockStoreManager.BlockStoreQueue.Dispose();
+            this.blockRepository.Dispose();
         }
     }
 
@@ -119,8 +172,10 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 .AddFeature<BlockStoreFeature>()
                 .FeatureServices(services =>
                     {
-                        services.AddSingleton<IBlockStoreQueue, BlockStoreQueue>().AddSingleton<IBlockStore>(provider => provider.GetService<IBlockStoreQueue>());
                         services.AddSingleton<IBlockRepository, BlockRepository>();
+                        services.AddSingleton<IBlockStoreCache, BlockStoreCache>();
+                        services.AddSingleton<BlockStoreQueue>().AddSingleton<IBlockStore, BlockStoreQueue>(provider => provider.GetService<BlockStoreQueue>());
+                        services.AddSingleton<BlockStoreManager>();
                         services.AddSingleton<BlockStoreSignaled>();
                         services.AddSingleton<StoreSettings>();
                         services.AddSingleton<BlockStoreController>();

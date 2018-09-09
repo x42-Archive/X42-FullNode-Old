@@ -52,10 +52,9 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
 
             string password = "test";
-            string passphrase = "test";
 
             // create the wallet
-            Mnemonic mnemonic = walletManager.CreateWallet(password, "mywallet", passphrase);
+            Mnemonic mnemonic = walletManager.CreateWallet(password, "mywallet");
 
             // assert it has saved it to disk and has been created correctly.
             var expectedWallet = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(dataFolder.WalletPath + "/mywallet.wallet.json"));
@@ -167,7 +166,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
             string passphrase = "this is my magic passphrase";
 
             // create the wallet
-            Mnemonic mnemonic = walletManager.CreateWallet(password, "mywallet", passphrase);
+            Mnemonic mnemonic = walletManager.CreateWallet(password, "mywallet", passphrase: passphrase);
 
             // assert it has saved it to disk and has been created correctly.
             var expectedWallet = JsonConvert.DeserializeObject<Wallet>(File.ReadAllText(dataFolder.WalletPath + "/mywallet.wallet.json"));
@@ -272,11 +271,10 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                                                     dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
 
             string password = "test";
-            string passphrase = "this is my magic passphrase";
 
             var mnemonic = new Mnemonic(Wordlist.French, WordCount.Eighteen);
 
-            Mnemonic returnedMnemonic = walletManager.CreateWallet(password, "mywallet", passphrase, mnemonic);
+            Mnemonic returnedMnemonic = walletManager.CreateWallet(password, "mywallet", null, mnemonic);
 
             Assert.Equal(mnemonic.DeriveSeed(), returnedMnemonic.DeriveSeed());
         }
@@ -288,7 +286,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
 
             var walletManager = this.CreateWalletManager(dataFolder, this.Network, "-walletaddressbuffer=100");
 
-            walletManager.CreateWallet("test", "mywallet", "this is my magic passphrase", new Mnemonic(Wordlist.English, WordCount.Eighteen));
+            walletManager.CreateWallet("test", "mywallet", null, new Mnemonic(Wordlist.English, WordCount.Eighteen));
 
             HdAccount hdAccount = walletManager.Wallets.Single().AccountsRoot.Single().Accounts.Single();
 
@@ -3251,7 +3249,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Tests
                 dataFolder, new Mock<IWalletFeePolicy>().Object, new Mock<IAsyncLoopFactory>().Object, new NodeLifetime(), DateTimeProvider.Default, new ScriptAddressReader());
 
             // create the wallet
-            Mnemonic mnemonic = walletManager.CreateWallet(password, walletName, passphrase);
+            Mnemonic mnemonic = walletManager.CreateWallet(password, walletName, passphrase: passphrase);
             Wallet wallet = walletManager.Wallets.ElementAt(0);
 
             File.Delete(dataFolder.WalletPath + $"/{walletName}.wallet.json");

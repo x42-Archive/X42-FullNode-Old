@@ -11,27 +11,20 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
     {
         public TransactionLocktimeActivationRuleTest()
         {
-            this.concurrentChain = GenerateChainWithHeight(5, this.network);
+            this.ruleContext.ValidationContext.Block = this.network.CreateBlock();
         }
 
         [Fact]
         public async Task RunAsync_DoesNotHaveBIP113Flag_TransactionNotFinal_ThrowsBadTransactionNonFinalConsensusErrorExceptionAsync()
         {
             this.ruleContext.Flags = new Base.Deployments.DeploymentFlags();
+            this.ruleContext.ConsensusTipHeight = 12;
 
-            Block block = this.network.CreateBlock();
-            Transaction transaction = this.network.CreateTransaction();
+            var transaction = new Transaction();
             transaction.LockTime = new DateTimeOffset(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
             transaction.Inputs.Add(new TxIn() { Sequence = 15 });
-            block.AddTransaction(transaction);
-            block.AddTransaction(CreateCoinStakeTransaction(this.network, new Key(), 6, this.concurrentChain.GetBlock(5).HashBlock));
-            this.ruleContext.ValidationContext = new ValidationContext()
-            {
-                BlockToValidate = block,
-                ChainedHeaderToValidate = this.concurrentChain.GetBlock(4)
-            };
-
-            this.ruleContext.ValidationContext.BlockToValidate.Header.BlockTime = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            this.ruleContext.ValidationContext.Block.AddTransaction(transaction);
+            this.ruleContext.ValidationContext.Block.Header.BlockTime = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
             ConsensusErrorException exception = await Assert.ThrowsAsync<ConsensusErrorException>(() => this.consensusRules.RegisterRule<TransactionLocktimeActivationRule>().RunAsync(this.ruleContext));
 
@@ -42,19 +35,12 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         public async Task RunAsync_HasBIP113Flag_TransactionNotFinal_ThrowsBadTransactionNonFinalConsensusErrorExceptionAsync()
         {
             this.ruleContext.Flags = new Base.Deployments.DeploymentFlags() { LockTimeFlags = Transaction.LockTimeFlags.MedianTimePast };
+            this.ruleContext.ConsensusTipHeight = 12;
             this.ruleContext.Time = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-
-            Block block = this.network.CreateBlock();
-            Transaction transaction = this.network.CreateTransaction();
+            var transaction = new Transaction();
             transaction.LockTime = new DateTimeOffset(new DateTime(2018, 1, 3, 0, 0, 0, DateTimeKind.Utc));
             transaction.Inputs.Add(new TxIn() { Sequence = 15 });
-            block.AddTransaction(transaction);
-            block.AddTransaction(CreateCoinStakeTransaction(this.network, new Key(), 6, this.concurrentChain.GetBlock(5).HashBlock));
-            this.ruleContext.ValidationContext = new ValidationContext()
-            {
-                BlockToValidate = block,
-                ChainedHeaderToValidate = this.concurrentChain.GetBlock(4)
-            };
+            this.ruleContext.ValidationContext.Block.AddTransaction(transaction);
 
             ConsensusErrorException exception = await Assert.ThrowsAsync<ConsensusErrorException>(() => this.consensusRules.RegisterRule<TransactionLocktimeActivationRule>().RunAsync(this.ruleContext));
 
@@ -65,19 +51,12 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         public async Task RunAsync_DoesNotHaveBIP113Flag_TransactionFinal_DoesNotThrowExceptionAsync()
         {
             this.ruleContext.Flags = new Base.Deployments.DeploymentFlags();
+            this.ruleContext.ConsensusTipHeight = 12;
 
-            Block block = this.network.CreateBlock();
-            Transaction transaction = this.network.CreateTransaction();
-            block.AddTransaction(transaction);
-            block.AddTransaction(CreateCoinStakeTransaction(this.network, new Key(), 6, this.concurrentChain.GetBlock(5).HashBlock));
-            this.ruleContext.ValidationContext = new ValidationContext()
-            {
-                BlockToValidate = block,
-                ChainedHeaderToValidate = this.concurrentChain.GetBlock(4)
-            };
+            var transaction = new Transaction();
+            this.ruleContext.ValidationContext.Block.AddTransaction(transaction);
+            this.ruleContext.ValidationContext.Block.Header.BlockTime = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
-            this.ruleContext.ValidationContext.BlockToValidate.Header.BlockTime = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-            
             await this.consensusRules.RegisterRule<TransactionLocktimeActivationRule>().RunAsync(this.ruleContext);
         }
 
@@ -85,29 +64,13 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         public async Task RunAsync_HasBIP113Flag_TransactionFinal_DoesNotThrowExceptionAsync()
         {
             this.ruleContext.Flags = new Base.Deployments.DeploymentFlags() { LockTimeFlags = Transaction.LockTimeFlags.MedianTimePast };
+            this.ruleContext.ConsensusTipHeight = 12;
             this.ruleContext.Time = new DateTimeOffset(new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
-            Block block = this.network.CreateBlock();
-            Transaction transaction = this.network.CreateTransaction();
-            block.AddTransaction(transaction);
-            block.AddTransaction(CreateCoinStakeTransaction(this.network, new Key(), 6, this.concurrentChain.GetBlock(5).HashBlock));
-            this.ruleContext.ValidationContext = new ValidationContext()
-            {
-                BlockToValidate = block,
-                ChainedHeaderToValidate = this.concurrentChain.GetBlock(4)
-            };
+            var transaction = new Transaction();
+            this.ruleContext.ValidationContext.Block.AddTransaction(transaction);
 
             await this.consensusRules.RegisterRule<TransactionLocktimeActivationRule>().RunAsync(this.ruleContext);
-        }
-
-        private static Transaction CreateCoinStakeTransaction(Network network, Key key, int height, uint256 prevout)
-        {
-            var coinStake = network.CreateTransaction();
-            coinStake.Time = (uint)18276127;
-            coinStake.AddInput(new TxIn(new OutPoint(prevout, 1)));
-            coinStake.AddOutput(new TxOut(0, new Script()));
-            coinStake.AddOutput(new TxOut(network.GetReward(height), key.ScriptPubKey));
-            return coinStake;
         }
     }
 }

@@ -29,6 +29,6 @@ namespace Stratis.SmartContracts.Executor.Reflection
         /// <summary>
         /// Invokes a method on the contract with the types matching the ordered types of the given parameters.
         /// </summary>
-        IContractInvocationResult Invoke(MethodCall call);
+        IContractInvocationResult Invoke(string methodName, IReadOnlyList<object> parameters);
     }
 }

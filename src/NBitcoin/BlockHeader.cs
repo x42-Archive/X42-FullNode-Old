@@ -67,16 +67,16 @@ namespace NBitcoin
             this.nonce = 0;
         }
 
-        public static BlockHeader Load(byte[] bytes, Network network)
+        public static BlockHeader Load(byte[] hex, Network network)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            if (hex == null)
+                throw new ArgumentNullException(nameof(hex));
 
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
 
             BlockHeader blockHeader = network.Consensus.ConsensusFactory.CreateBlockHeader();
-            blockHeader.ReadWrite(bytes, network.Consensus.ConsensusFactory);
+            blockHeader.ReadWrite(hex, network.Consensus.ConsensusFactory);
 
             return blockHeader;
         }
@@ -163,7 +163,6 @@ namespace NBitcoin
             return this.GetPoWHash() <= this.Bits.ToUInt256();
         }
 
-        /// <inheritdoc />
         public override string ToString()
         {
             return this.GetHash().ToString();

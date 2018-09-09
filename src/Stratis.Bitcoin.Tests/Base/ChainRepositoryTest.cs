@@ -25,13 +25,13 @@ namespace Stratis.Bitcoin.Tests.Base
 
             using (var repo = new ChainRepository(dir, new LoggerFactory()))
             {
-                await repo.SaveFinalizedBlockHashAndHeightAsync(uint256.One, 777);
+                await repo.SaveFinalizedBlockHeightAsync(777);
             }
 
             using (var repo = new ChainRepository(dir, new LoggerFactory()))
             {
-                await repo.LoadFinalizedBlockInfoAsync(new StratisMain());
-                Assert.Equal(777, repo.GetFinalizedBlockInfo().Height);
+                await repo.LoadFinalizedBlockHeightAsync();
+                Assert.Equal(777, repo.GetFinalizedBlockHeight());
             }
         }
 
@@ -42,16 +42,16 @@ namespace Stratis.Bitcoin.Tests.Base
 
             using (var repo = new ChainRepository(dir, new LoggerFactory()))
             {
-                await repo.SaveFinalizedBlockHashAndHeightAsync(uint256.One, 777);
-                await repo.SaveFinalizedBlockHashAndHeightAsync(uint256.One, 555);
+                await repo.SaveFinalizedBlockHeightAsync(777);
+                await repo.SaveFinalizedBlockHeightAsync(555);
 
-                Assert.Equal(777, repo.GetFinalizedBlockInfo().Height);
+                Assert.Equal(777, repo.GetFinalizedBlockHeight());
             }
 
             using (var repo = new ChainRepository(dir, new LoggerFactory()))
             {
-                await repo.LoadFinalizedBlockInfoAsync(new StratisMain());
-                Assert.Equal(777, repo.GetFinalizedBlockInfo().Height);
+                await repo.LoadFinalizedBlockHeightAsync();
+                Assert.Equal(777, repo.GetFinalizedBlockHeight());
             }
         }
 
@@ -110,7 +110,7 @@ namespace Stratis.Bitcoin.Tests.Base
             using (var repo = new ChainRepository(dir, new LoggerFactory()))
             {
                 var testChain = new ConcurrentChain(KnownNetworks.StratisRegTest);
-                testChain.SetTip(repo.LoadAsync(testChain.Genesis).GetAwaiter().GetResult());
+                repo.LoadAsync(testChain).GetAwaiter().GetResult();
                 Assert.Equal(tip, testChain.Tip);
             }
         }

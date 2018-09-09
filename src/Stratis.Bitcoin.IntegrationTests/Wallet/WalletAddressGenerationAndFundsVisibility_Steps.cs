@@ -20,7 +20,6 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
         private const string SendingWalletName = "senderwallet";
         private const string ReceivingWalletName = "receivingwallet";
         private const string WalletPassword = "password";
-        private const string WalletPassphrase = "passphrase";
         public const string AccountZero = "account 0";
         private const string ReceivingNodeName = "receiving";
         private const string SendingNodeName = "sending";
@@ -72,9 +71,9 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
         {
             this.nodeGroup = this.nodeGroupBuilder
                 .StratisPowNode(SendingNodeName).Start().NotInIBD()
-                .WithWallet(SendingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(SendingWalletName, WalletPassword)
                 .StratisPowNode(ReceivingNodeName).Start().NotInIBD()
-                .WithWallet(ReceivingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(ReceivingWalletName, WalletPassword)
                 .WithConnections()
                 .Connect(SendingNodeName, ReceivingNodeName)
                 .AndNoMoreConnections()
@@ -90,10 +89,9 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
                 new NodeConfigParameters { { "walletaddressbuffer", customUnusedAddressBuffer.ToString() } };
             this.nodeGroup = this.nodeGroupBuilder
                 .StratisPowNode(SendingNodeName).Start().NotInIBD()
-                .WithWallet(SendingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(SendingWalletName, WalletPassword)
                 .StratisCustomPowNode(ReceivingNodeName, configParameters).Start()
-                .NotInIBD()
-                .WithWallet(ReceivingWalletName, WalletPassword, WalletPassphrase)
+                .WithWallet(ReceivingWalletName, WalletPassword)
                 .WithConnections()
                 .Connect(SendingNodeName, ReceivingNodeName)
                 .AndNoMoreConnections()
@@ -132,7 +130,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
 
         private ExtPubKey GetExtendedPublicKey(string nodeName)
         {
-            ExtKey xPrivKey = this.nodeGroupBuilder.NodeMnemonics[nodeName].DeriveExtKey(WalletPassphrase);
+            ExtKey xPrivKey = this.nodeGroupBuilder.NodeMnemonics[nodeName].DeriveExtKey(WalletPassword);
             Key privateKey = xPrivKey.PrivateKey;
             ExtPubKey xPublicKey = HdOperations.GetExtendedPublicKey(privateKey, xPrivKey.ChainCode, (int)CoinType.Bitcoin, 0);
             return xPublicKey;

@@ -8,7 +8,6 @@ using Stratis.Bitcoin.Features.Notifications.Interfaces;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
 using Stratis.Bitcoin.Features.Wallet.Notifications;
-using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Tests.Common;
 using Stratis.Bitcoin.Tests.Common.Logging;
@@ -48,7 +47,7 @@ namespace Stratis.Bitcoin.Features.LightWallet.Tests
 
             lightWalletSyncManager.Start();
 
-            this.signals.Verify(s => s.SubscribeForBlocksConnected(It.IsAny<IObserver<ChainedHeaderBlock>>()), Times.Exactly(1));
+            this.signals.Verify(s => s.SubscribeForBlocksConnected(It.IsAny<IObserver<Block>>()), Times.Exactly(1));
             this.signals.Verify(s => s.SubscribeForTransactions(It.IsAny<IObserver<Transaction>>()), Times.Exactly(1));
         }
 

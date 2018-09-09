@@ -212,13 +212,16 @@ namespace Stratis.Bitcoin.Features.Wallet
         }
 
         /// <inheritdoc />
-        public Mnemonic CreateWallet(string password, string name, string passphrase, Mnemonic mnemonic = null)
+        public Mnemonic CreateWallet(string password, string name, string passphrase = null, Mnemonic mnemonic = null)
         {
             Guard.NotEmpty(password, nameof(password));
             Guard.NotEmpty(name, nameof(name));
-            Guard.NotNull(passphrase, nameof(passphrase));
 
             this.logger.LogTrace("({0}:'{1}')", nameof(name), name);
+
+            // For now the passphrase is set to be the password by default.
+            if (passphrase == null)
+                passphrase = password;
 
             // Generate the root seed used to generate keys from a mnemonic picked at random
             // and a passphrase optionally provided by the user.
@@ -248,7 +251,7 @@ namespace Stratis.Bitcoin.Features.Wallet
             }
             else
             {
-                this.UpdateWhenChainDownloaded(new[] { wallet }, this.dateTimeProvider.GetUtcNow());
+                this.UpdateWhenChainDownloaded(new[] { wallet }, DateTime.Now);
             }
 
             // Save the changes to the file and add addresses to be tracked.
@@ -289,13 +292,16 @@ namespace Stratis.Bitcoin.Features.Wallet
         }
 
         /// <inheritdoc />
-        public Wallet RecoverWallet(string password, string name, string mnemonic, DateTime creationTime, string passphrase)
+        public Wallet RecoverWallet(string password, string name, string mnemonic, DateTime creationTime, string passphrase = null)
         {
             Guard.NotEmpty(password, nameof(password));
             Guard.NotEmpty(name, nameof(name));
             Guard.NotEmpty(mnemonic, nameof(mnemonic));
-            Guard.NotNull(passphrase, nameof(passphrase));
             this.logger.LogTrace("({0}:'{1}')", nameof(name), name);
+
+            // For now the passphrase is set to be the password by default.
+            if (passphrase == null)
+                passphrase = password;
 
             // Generate the root seed used to generate keys.
             ExtKey extendedKey;

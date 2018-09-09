@@ -1,5 +1,5 @@
 ﻿using System;
-using Stratis.Bitcoin.Primitives;
+using NBitcoin;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.Extensions;
@@ -10,30 +10,27 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
     /// This date time provider substitutes the node's usual DTP when running certain
     /// integration tests so that we can generate coins faster.
     /// </summary>
-    public sealed class GenerateCoinsFastDateTimeProvider : SignalObserver<ChainedHeaderBlock>, IDateTimeProvider
+    public sealed class GenerateCoinsFastDateTimeProvider : SignalObserver<Block>, IDateTimeProvider
     {
-        private static TimeSpan adjustedTimeOffset;
-        private static DateTime startFrom;
-
-        static GenerateCoinsFastDateTimeProvider()
-        {
-            adjustedTimeOffset = TimeSpan.Zero;
-            startFrom = new DateTime(2018, 1, 1);
-        }
+        private TimeSpan adjustedTimeOffset;
+        private DateTime startFrom;
 
         public GenerateCoinsFastDateTimeProvider(Signals.Signals signals)
         {
+            this.adjustedTimeOffset = TimeSpan.Zero;
+            this.startFrom = new DateTime(2018, 1, 1);
+
             signals.SubscribeForBlocksConnected(this);
         }
 
         public long GetTime()
         {
-            return startFrom.ToUnixTimestamp();
+            return this.startFrom.ToUnixTimestamp();
         }
 
         public DateTime GetUtcNow()
         {
-            return startFrom;
+            return this.startFrom;
         }
 
         /// <summary>
@@ -41,7 +38,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
         /// </summary>
         public DateTime GetAdjustedTime()
         {
-            return startFrom;
+            return this.startFrom;
         }
 
         /// <summary>
@@ -56,7 +53,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
         /// </summary>
         public DateTimeOffset GetTimeOffset()
         {
-            return startFrom;
+            return this.startFrom;
         }
 
         /// <summary>
@@ -71,21 +68,21 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
         /// </summary>
         public long GetAdjustedTimeAsUnixTimestamp()
         {
-            return startFrom.ToUnixTimestamp();
+            return this.startFrom.ToUnixTimestamp();
         }
 
-        public void SetAdjustedTimeOffset(TimeSpan adjusted)
+        public void SetAdjustedTimeOffset(TimeSpan adjustedTimeOffset)
         {
-            adjustedTimeOffset = adjusted;
+            this.adjustedTimeOffset = adjustedTimeOffset;
         }
 
         /// <summary>
         /// Every time a new block gets generated, this date time provider will be signaled,
         /// updating the last block time by 65 seconds.
         /// </summary>
-        protected override void OnNextCore(ChainedHeaderBlock value)
+        protected override void OnNextCore(Block value)
         {
-            startFrom = startFrom.AddSeconds(65);
+            this.startFrom = this.startFrom.AddSeconds(65);
         }
     }
 }

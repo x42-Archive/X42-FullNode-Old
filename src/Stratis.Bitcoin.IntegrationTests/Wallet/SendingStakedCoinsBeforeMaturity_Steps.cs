@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NBitcoin;
+using Stratis.Bitcoin.Features.Consensus;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Controllers;
 using Stratis.Bitcoin.Features.Wallet.Models;
@@ -21,7 +22,6 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
         private CoreNode receiverNode;
         private const string WalletName = "mywallet";
         private const string WalletPassword = "123456";
-        private const string WalletPassphrase = "passphrase";
         private const string WalletAccountName = "account 0";
 
         public SendingStakedCoinsBeforeMaturity(ITestOutputHelper outputHelper)
@@ -44,9 +44,10 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
             this.proofOfStakeSteps.MineGenesisAndPremineBlocks();
 
             this.receiverNode = this.proofOfStakeSteps.NodeGroupBuilder
-                                    .CreateStratisPosNode(NodeReceiver).Start().NotInIBD()
-                                    .WithWallet(WalletName, WalletPassword, WalletPassphrase)
-                                    .WithConnections().Connect(this.proofOfStakeSteps.PremineNode, NodeReceiver).AndNoMoreConnections()
+                                    .CreateStratisPosNode(NodeReceiver)
+                                    .Start()
+                                    .NotInIBD()
+                                    .WithWallet(WalletName, WalletPassword)
                                     .Build()[NodeReceiver];
         }
 
@@ -117,6 +118,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Wallet
 
         private string GetReceiverUnusedAddressFromWallet()
         {
+            this.proofOfStakeSteps.NodeGroupBuilder.WithConnections().Connect(this.proofOfStakeSteps.PremineNode, NodeReceiver);
             return this.receiverNode.FullNode.WalletManager().GetUnusedAddress(new WalletAccountReference(WalletName, WalletAccountName)).Address;
         }
     }

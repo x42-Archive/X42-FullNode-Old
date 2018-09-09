@@ -22,7 +22,7 @@ namespace Stratis.StratisD
         {
             try
             {
-                var nodeSettings = new NodeSettings(protocolVersion:ProtocolVersion.ALT_PROTOCOL_VERSION, args:args);
+                var nodeSettings = new NodeSettings(protocolVersion:ProtocolVersion.X42_PROTOCOL_VERSION, args:args);
 
                 IFullNode node = new FullNodeBuilder()
                     .UseNodeSettings(nodeSettings)

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Crypto;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
@@ -12,16 +12,15 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
     /// <summary>
     /// A rule that will validate the signature of a PoS block.
     /// </summary>
-    public class PosBlockSignatureRule : IntegrityValidationConsensusRule
+    [PartialValidationRule(CanSkipValidation = false)]
+    [IntegrityValidationRule]
+    public class PosBlockSignatureRule : StakeStoreConsensusRule
     {
-        /// <summary>When checking the POS block signature this determines the maximum push data (public key) size following the OP_RETURN in the nonspendable output.</summary>
-        private const int MaxPushDataSize = 40;
-
         /// <inheritdoc />
         /// <exception cref="ConsensusErrors.BadBlockSignature">The block signature is invalid.</exception>
-        public override void Run(RuleContext context)
+        public override Task RunAsync(RuleContext context)
         {
-            Block block = context.ValidationContext.BlockToValidate;
+            Block block = context.ValidationContext.Block;
 
             if (!(block is PosBlock posBlock))
             {
@@ -35,6 +34,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 this.Logger.LogTrace("(-)[BAD_SIGNATURE]");
                 ConsensusErrors.BadBlockSignature.Throw();
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -85,20 +86,13 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                 return false;
             }
 
-            if (ops.Count != 2)
+            if (ops.Count < 2) // script.GetOp(pc, opcode, vchPushValue)
             {
-                this.Logger.LogTrace("(-)[INVALID_OP_COUNT]:false");
+                this.Logger.LogTrace("(-)[NO_SECOND_OP]:false");
                 return false;
             }
 
             byte[] data = ops.ElementAt(1).PushData;
-
-            if (data.Length > MaxPushDataSize)
-            {
-                this.Logger.LogTrace("(-)[PUSH_DATA_TOO_LARGE]:false");
-                return false;
-            }
-
             if (!ScriptEvaluationContext.IsCompressedOrUncompressedPubKey(data))
             {
                 this.Logger.LogTrace("(-)[NO_PUSH_DATA]:false");

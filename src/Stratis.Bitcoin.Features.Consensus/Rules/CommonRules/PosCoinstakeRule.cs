@@ -2,26 +2,16 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
-using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 {
-    /// <summary>Context checks on a POS block.</summary>
-    public class PosCoinstakeRule : PartialValidationConsensusRule
+    /// <summary>
+    /// Context checks on a POS block.
+    /// </summary>
+    [PartialValidationRule(CanSkipValidation = true)]
+    public class PosCoinstakeRule : StakeStoreConsensusRule
     {
-        /// <summary>Allow access to the POS parent.</summary>
-        protected PosConsensusRuleEngine PosParent;
-
-        /// <inheritdoc />
-        public override void Initialize()
-        {
-            this.PosParent = this.Parent as PosConsensusRuleEngine;
-
-            Guard.NotNull(this.PosParent, nameof(this.PosParent));
-        }
-
         /// <inheritdoc />
         /// <exception cref="ConsensusErrors.BadStakeBlock">The coinbase output (first transaction) is not empty.</exception>
         /// <exception cref="ConsensusErrors.BadStakeBlock">The second transaction is not a coinstake transaction.</exception>
@@ -29,10 +19,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// <exception cref="ConsensusErrors.BlockTimeBeforeTrx">The block contains a transaction with a timestamp after the block timestamp.</exception>
         public override Task RunAsync(RuleContext context)
         {
-            if (context.SkipValidation)
-                return Task.CompletedTask;
-
-            Block block = context.ValidationContext.BlockToValidate;
+            Block block = context.ValidationContext.Block;
 
             if (BlockStake.IsProofOfStake(block))
             {

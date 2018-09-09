@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using NBitcoin;
 using Stratis.Bitcoin.Features.RPC;
-using Stratis.Bitcoin.Features.SmartContracts.Networks;
 using Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers;
 
 namespace Stratis.Bitcoin.IntegrationTests.Common.MockChain
@@ -24,15 +22,8 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.MockChain
             get { return this.nodes; }
         }
 
-        /// <summary>
-        /// Network the nodes are running on.
-        /// </summary>
-        public Network Network { get; }
-
         public MockChain(int numNodes)
         {
-            this.Network = new SmartContractsRegTest(); // TODO: Make this configurable.
-
             this.builder = NodeBuilder.Create(this);
             this.nodes = new MockChainNode[numNodes];
 

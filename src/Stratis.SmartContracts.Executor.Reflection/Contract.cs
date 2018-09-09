@@ -13,11 +13,6 @@ namespace Stratis.SmartContracts.Executor.Reflection
     /// </summary>
     public class Contract : IContract
     {
-        /// <summary>
-        /// The default binding flags for matching the receive method. Matches public instance methods declared on the contract type only.
-        /// </summary>
-        private const BindingFlags DefaultReceiveLookup = BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public;
-
         private readonly SmartContract instance;
 
         /// <summary>
@@ -33,23 +28,6 @@ namespace Stratis.SmartContracts.Executor.Reflection
 
         /// <inheritdoc />
         public ISmartContractState State { get; }
-
-        private MethodInfo receive;
-
-        /// <summary>
-        /// Returns the receive handler method defined on the inherited contract type. If no receive handler was defined, returns null.
-        /// </summary>
-        public MethodInfo ReceiveHandler {
-            get
-            {
-                if (this.receive == null)
-                {
-                    this.receive = this.Type.GetMethod(MethodCall.ReceiveHandlerName, DefaultReceiveLookup);
-                }
-
-                return this.receive;
-            }
-        }
 
         private Contract(SmartContract instance, Type type, ISmartContractState state, uint160 address)
         {
@@ -106,18 +84,13 @@ namespace Stratis.SmartContracts.Executor.Reflection
         }
 
         /// <inheritdoc />
-        public IContractInvocationResult Invoke(MethodCall call)
+        public IContractInvocationResult Invoke(string methodName, IReadOnlyList<object> parameters)
         {
-            if (call.IsReceiveHandlerCall)
-            {
-                return this.InvokeReceiveHandler();
-            }
-
-            object[] invokeParams = call.Parameters?.ToArray() ?? new object[0];
+            object[] invokeParams = parameters?.ToArray() ?? new object[0];
 
             Type[] types = invokeParams.Select(p => p.GetType()).ToArray();
 
-            MethodInfo methodToInvoke = this.Type.GetMethod(call.Name, types);
+            MethodInfo methodToInvoke = this.Type.GetMethod(methodName, types);
 
             if (methodToInvoke == null)
                 return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodDoesNotExist);
@@ -130,32 +103,11 @@ namespace Stratis.SmartContracts.Executor.Reflection
             if (methodToInvoke.IsPrivate)
                 return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodIsPrivate);
 
-            EnsureInitialized();
-
-            return this.InvokeInternal(methodToInvoke, invokeParams);
-        }
-
-        private IContractInvocationResult InvokeReceiveHandler()
-        {
-            // Handles the scenario where no receive was defined, but it is attempted to be invoked anyway.
-            // This could occur if a method invocation is directly made to the receive via a transaction.
-            if (this.ReceiveHandler == null)
-                return ContractInvocationResult.Failure(ContractInvocationErrorType.MethodDoesNotExist);
-
-            EnsureInitialized();
-
-            return this.InvokeInternal(this.ReceiveHandler, null);
-        }
-
-        /// <summary>
-        /// Ensures the contract is initialized by setting its state fields.
-        /// </summary>
-        private void EnsureInitialized()
-        {
-            if (!this.initialized)
+            // Restore the state of the instance
+            if(!this.initialized)
                 SetStateFields(this.instance, this.State);
 
-            this.initialized = true;
+            return this.InvokeInternal(methodToInvoke, invokeParams);
         }
 
         /// <summary>

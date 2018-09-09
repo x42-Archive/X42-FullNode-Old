@@ -123,14 +123,10 @@ namespace Stratis.Bitcoin.Features.Miner.Controllers
         /// <summary>
         /// Stop staking.
         /// </summary>
-        /// <param name="corsProtection">This body parameter is here to prevent a CORS call from triggering method execution.</param>
-        /// <remarks>
-        /// <seealso cref="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS#Simple_requests"/>
-        /// </remarks>
         /// <returns>An <see cref="OkResult"/> object that produces a status code 200 HTTP response.</returns>
         [Route("stopstaking")]
         [HttpPost]
-        public IActionResult StopStaking([FromBody] bool corsProtection = true)
+        public IActionResult StopStaking()
         {
             try
             {
@@ -146,5 +142,6 @@ namespace Stratis.Bitcoin.Features.Miner.Controllers
                 return ErrorHelpers.BuildErrorResponse(HttpStatusCode.BadRequest, e.Message, e.ToString());
             }
         }
+
     }
 }

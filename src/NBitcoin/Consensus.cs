@@ -70,7 +70,7 @@ namespace NBitcoin
 
         public BigInteger ProofOfStakeLimitV2 { get; }
 
-        /// <inheritdoc />
+        /// <inheritdoc />        
         public int LastPOWBlock { get; set; }
 
         /// <inheritdoc />
@@ -83,16 +83,7 @@ namespace NBitcoin
         public ConsensusFactory ConsensusFactory { get; }
 
         /// <inheritdoc />
-        public List<IIntegrityValidationConsensusRule> IntegrityValidationRules { get; set; }
-
-        /// <inheritdoc />
-        public List<IHeaderValidationConsensusRule> HeaderValidationRules { get; set; }
-
-        /// <inheritdoc />
-        public List<IPartialValidationConsensusRule> PartialValidationRules { get; set; }
-
-        /// <inheritdoc />
-        public List<IFullValidationConsensusRule> FullValidationRules { get; set; }
+        public ICollection<IConsensusRule> Rules { get; set; }
 
         public Money ProofOfStakeRewardAfterSubsidyLimit { get; }
 
@@ -104,7 +95,7 @@ namespace NBitcoin
         public Consensus(
             ConsensusFactory consensusFactory,
             ConsensusOptions consensusOptions,
-            int coinType,
+            int coinType,            
             uint256 hashGenesisBlock,
             int subsidyHalvingInterval,
             int majorityEnforceBlockUpgrade,
@@ -132,12 +123,10 @@ namespace NBitcoin
             int lastPowBlock,
             BigInteger proofOfStakeLimit,
             BigInteger proofOfStakeLimitV2,
-            Money proofOfStakeReward)
+            Money proofOfStakeReward
+            )
         {
-            this.IntegrityValidationRules = new List<IIntegrityValidationConsensusRule>();
-            this.HeaderValidationRules = new List<IHeaderValidationConsensusRule>();
-            this.PartialValidationRules = new List<IPartialValidationConsensusRule>();
-            this.FullValidationRules = new List<IFullValidationConsensusRule>();
+            this.Rules = new List<IConsensusRule>();
             this.CoinbaseMaturity = coinbaseMaturity;
             this.PremineReward = premineReward;
             this.PremineHeight = premineHeight;
