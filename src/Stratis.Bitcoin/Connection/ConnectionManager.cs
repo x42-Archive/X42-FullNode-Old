@@ -211,7 +211,6 @@ namespace Stratis.Bitcoin.Connection
             this.logger.LogTrace("(-)");
         }
 
-<<<<<<< HEAD
         public string GetStats()
         {
             var builder = new StringBuilder();
@@ -255,8 +254,6 @@ namespace Stratis.Bitcoin.Connection
             return builder.ToString();
         }
 
-=======
->>>>>>> parent of 608f9a9... Added GetHighestTip to ConnectionManager
         public string GetNodeStats()
         {
             var builder = new StringBuilder();
