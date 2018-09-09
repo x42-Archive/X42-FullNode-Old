@@ -333,7 +333,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
             try
             {
                 Wallet wallet = this.walletManager.GetWallet(request.Name);
-                int? highestChain = this.connectionManager?.ConnectedPeers?.Max(a => a.Behavior<Bitcoin.Consensus.ConsensusManagerBehavior>().ExpectedPeerTip.Height);
+                int? highestChain = this.connectionManager?.ConnectedPeers.Max(a => a.Behavior<Bitcoin.Consensus.ConsensusManagerBehavior>().ExpectedPeerTip.Height);
 
                 var model = new WalletGeneralInfoModel
                 {
