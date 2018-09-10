@@ -26,9 +26,12 @@ using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Mining;
 using Stratis.Bitcoin.Utilities;
 using Stratis.SmartContracts.Core;
+using Stratis.SmartContracts.Core.Receipts;
 using Stratis.SmartContracts.Core.State;
+using Stratis.SmartContracts.Core.Util;
 using Stratis.SmartContracts.Core.Validation;
 using Stratis.SmartContracts.Executor.Reflection;
+using Stratis.SmartContracts.Executor.Reflection.Compilation;
 using Stratis.SmartContracts.Executor.Reflection.Loader;
 using Stratis.SmartContracts.Executor.Reflection.Serialization;
 
@@ -39,9 +42,9 @@ namespace Stratis.Bitcoin.Features.SmartContracts
         private readonly IConsensusLoop consensusLoop;
         private readonly ILogger logger;
         private readonly Network network;
-        private readonly ContractStateRepositoryRoot stateRoot;
+        private readonly IContractStateRoot stateRoot;
 
-        public SmartContractFeature(IConsensusLoop consensusLoop, ILoggerFactory loggerFactory, Network network, ContractStateRepositoryRoot stateRoot)
+        public SmartContractFeature(IConsensusLoop consensusLoop, ILoggerFactory loggerFactory, Network network, IContractStateRoot stateRoot)
         {
             this.consensusLoop = consensusLoop;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -79,7 +82,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                         // STATE ----------------------------------------------------------------------------
                         services.AddSingleton<DBreezeContractStateStore>();
                         services.AddSingleton<NoDeleteContractStateSource>();
-                        services.AddSingleton<ContractStateRepositoryRoot>();
+                        services.AddSingleton<IContractStateRoot, ContractStateRoot>();
 
                         // CONSENSUS ------------------------------------------------------------------------
                         services.AddSingleton<IMempoolValidator, SmartContractMempoolValidator>();
@@ -90,8 +93,15 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                         services.AddSingleton<ISmartContractVirtualMachine, ReflectionVirtualMachine>();
                         services.AddSingleton<IAddressGenerator, AddressGenerator>();
                         services.AddSingleton<ILoader, ContractAssemblyLoader>();
-
+                        services.AddSingleton<IContractModuleDefinitionReader, ContractModuleDefinitionReader>();
+                        services.AddSingleton<IStateFactory, StateFactory>();
                         services.AddSingleton<SmartContractTransactionPolicy>();
+
+                        // RECEIPTS -------------------------------------------------------------------------
+                        services.AddSingleton<IReceiptRepository, PersistentReceiptRepository>();
+
+                        // UTILS ----------------------------------------------------------------------------
+                        services.AddSingleton<ISenderRetriever, SenderRetriever>();
 
                         ICallDataSerializer callDataSerializer = CallDataSerializer.Default;
                         services.AddSingleton(callDataSerializer);
@@ -202,6 +212,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                         services.AddSingleton<IPowMining, PowMining>();
                         services.AddSingleton<IBlockProvider, SmartContractBlockProvider>();
                         services.AddSingleton<BlockDefinition, SmartContractBlockDefinition>();
+                        services.AddSingleton<IBlockBufferGenerator, BlockBufferGenerator>();
                         services.AddSingleton<MiningController>();
                         services.AddSingleton<MiningRpcController>();
                         services.AddSingleton<MinerSettings>();
@@ -232,6 +243,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                         services.AddSingleton<IBlockProvider, SmartContractBlockProvider>();
                         services.AddSingleton<BlockDefinition, SmartContractBlockDefinition>();
                         services.AddSingleton<BlockDefinition, SmartContractPosPowBlockDefinition>();
+                        services.AddSingleton<IBlockBufferGenerator, BlockBufferGenerator>();
                         services.AddSingleton<MiningRpcController>();
                         services.AddSingleton<MiningController>();
                         services.AddSingleton<StakingController>();
@@ -266,6 +278,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                         services.AddSingleton<IKeyEncodingStrategy, BasicKeyEncodingStrategy>();
                         services.AddSingleton<ISmartContractExecutorFactory, ReflectionSmartContractExecutorFactory>();
                         services.AddSingleton<IMethodParameterSerializer, MethodParameterSerializer>();
+                        services.AddSingleton<IContractPrimitiveSerializer, ContractPrimitiveSerializer>();
 
                         // Controllers
                         services.AddSingleton<SmartContractsController>();

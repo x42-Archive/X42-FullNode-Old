@@ -5,9 +5,9 @@
     /// </summary>
     public enum ProtocolVersion : uint
     {
-        PROTOCOL_VERSION = 420012,
+        PROTOCOL_VERSION = 70012,
 
-        X42_PROTOCOL_VERSION = 420000,
+        ALT_PROTOCOL_VERSION = 70000,
 
         /// <summary>
         /// Initial protocol version, to be increased after version/verack negotiation.

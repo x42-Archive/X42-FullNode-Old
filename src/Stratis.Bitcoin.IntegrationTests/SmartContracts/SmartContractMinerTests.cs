@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DBreeze;
 using Microsoft.Extensions.Logging;
+using Moq;
 using NBitcoin;
 using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Base.Deployments;
@@ -26,6 +27,7 @@ using Stratis.Bitcoin.Features.SmartContracts;
 using Stratis.Bitcoin.Features.SmartContracts.Consensus;
 using Stratis.Bitcoin.Features.SmartContracts.Networks;
 using Stratis.Bitcoin.IntegrationTests.Mempool;
+using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Mining;
 using Stratis.Bitcoin.P2P;
 using Stratis.Bitcoin.P2P.Peer;
@@ -35,11 +37,14 @@ using Stratis.Bitcoin.Utilities;
 using Stratis.Patricia;
 using Stratis.SmartContracts;
 using Stratis.SmartContracts.Core;
+using Stratis.SmartContracts.Core.Receipts;
 using Stratis.SmartContracts.Core.State;
+using Stratis.SmartContracts.Core.Util;
 using Stratis.SmartContracts.Core.Validation;
 using Stratis.SmartContracts.Executor.Reflection;
 using Stratis.SmartContracts.Executor.Reflection.Compilation;
 using Stratis.SmartContracts.Executor.Reflection.Loader;
+using Stratis.SmartContracts.Executor.Reflection.Serialization;
 using Xunit;
 using Key = NBitcoin.Key;
 
@@ -56,6 +61,7 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
         public static BlockDefinition AssemblerForTest(TestContext testContext)
         {
             return new SmartContractBlockDefinition(
+                new BlockBufferGenerator(),
                 testContext.cachedCoinView,
                 testContext.consensus,
                 testContext.date,
@@ -65,6 +71,7 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
                 testContext.mempoolLock,
                 new MinerSettings(testContext.nodeSettings),
                 testContext.network,
+                new SenderRetriever(),
                 testContext.stateRoot);
         }
 
@@ -142,7 +149,7 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
             public int baseheight;
             public CachedCoinView cachedCoinView;
             public ISmartContractResultRefundProcessor refundProcessor;
-            public ContractStateRepositoryRoot stateRoot;
+            public ContractStateRoot stateRoot;
             public ISmartContractResultTransferProcessor transferProcessor;
             public SmartContractValidator validator;
             public IKeyEncodingStrategy keyEncodingStrategy;
@@ -154,6 +161,9 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
             private ReflectionVirtualMachine vm;
             private ICallDataSerializer serializer;
             private ContractAssemblyLoader assemblyLoader;
+            private IContractModuleDefinitionReader moduleDefinitionReader;
+            private IContractPrimitiveSerializer contractPrimitiveSerializer;
+            private StateFactory stateFactory;
             public AddressGenerator AddressGenerator { get; set; }
 
             public TestContext()
@@ -198,31 +208,37 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
                 byteStore.Empty();
                 ISource<byte[], byte[]> stateDB = new NoDeleteSource<byte[], byte[]>(byteStore);
 
-                this.stateRoot = new ContractStateRepositoryRoot(stateDB);
+                this.stateRoot = new ContractStateRoot(stateDB);
                 this.validator = new SmartContractValidator();
 
                 this.refundProcessor = new SmartContractResultRefundProcessor(loggerFactory);
                 this.transferProcessor = new SmartContractResultTransferProcessor(loggerFactory, this.network);
 
                 this.serializer = CallDataSerializer.Default;
-                this.internalTxExecutorFactory = new InternalTransactionExecutorFactory(this.keyEncodingStrategy, loggerFactory, this.network);
                 this.AddressGenerator = new AddressGenerator();
                 this.assemblyLoader = new ContractAssemblyLoader();
-                this.vm = new ReflectionVirtualMachine(this.validator, this.internalTxExecutorFactory, loggerFactory, this.network, this.AddressGenerator, this.assemblyLoader);
-                this.executorFactory = new ReflectionSmartContractExecutorFactory(loggerFactory, this.serializer, this.refundProcessor, this.transferProcessor, this.vm);
+                this.moduleDefinitionReader = new ContractModuleDefinitionReader();
+                this.contractPrimitiveSerializer = new ContractPrimitiveSerializer(this.network);
+                this.vm = new ReflectionVirtualMachine(this.validator, loggerFactory, this.network, this.assemblyLoader, this.moduleDefinitionReader);
+                this.internalTxExecutorFactory = new InternalTransactionExecutorFactory(loggerFactory, this.network);
+                this.stateFactory = new StateFactory(this.network, this.contractPrimitiveSerializer, this.vm, this.AddressGenerator, this.internalTxExecutorFactory);
+                this.executorFactory = new ReflectionSmartContractExecutorFactory(loggerFactory, this.serializer, this.refundProcessor, this.transferProcessor, this.network, this.stateFactory);
 
-                var networkPeerFactory = new NetworkPeerFactory(this.network, dateTimeProvider, loggerFactory, new PayloadProvider(), new SelfEndpointTracker());
-                var peerAddressManager = new PeerAddressManager(DateTimeProvider.Default, nodeSettings.DataFolder, loggerFactory, new SelfEndpointTracker());
+                var networkPeerFactory = new NetworkPeerFactory(this.network, dateTimeProvider, loggerFactory, new PayloadProvider(), new SelfEndpointTracker(loggerFactory), new Mock<IInitialBlockDownloadState>().Object, new ConnectionManagerSettings());
+                var peerAddressManager = new PeerAddressManager(DateTimeProvider.Default, nodeSettings.DataFolder, loggerFactory, new SelfEndpointTracker(loggerFactory));
+
                 var peerDiscovery = new PeerDiscovery(new AsyncLoopFactory(loggerFactory), loggerFactory, this.network, networkPeerFactory, new NodeLifetime(), nodeSettings, peerAddressManager);
                 var connectionSettings = new ConnectionManagerSettings(nodeSettings);
-                var selfEndpointTracker = new SelfEndpointTracker();
+                var selfEndpointTracker = new SelfEndpointTracker(loggerFactory);
                 var connectionManager = new ConnectionManager(dateTimeProvider, loggerFactory, this.network, networkPeerFactory, nodeSettings, new NodeLifetime(), new NetworkPeerConnectionParameters(), peerAddressManager, new IPeerConnector[] { }, peerDiscovery, selfEndpointTracker, connectionSettings, new SmartContractVersionProvider());
                 var blockPuller = new LookaheadBlockPuller(this.chain, connectionManager, new LoggerFactory());
                 var peerBanning = new PeerBanning(connectionManager, loggerFactory, dateTimeProvider, peerAddressManager);
                 var nodeDeployments = new NodeDeployments(this.network, this.chain);
+                var senderRetriever = new SenderRetriever();
 
                 var smartContractRuleRegistration = new SmartContractPowRuleRegistration();
-                ConsensusRules consensusRules = new SmartContractPowConsensusRuleEngine(this.chain, new Checkpoints(), consensusSettings, dateTimeProvider, this.executorFactory, loggerFactory, this.network, nodeDeployments, this.stateRoot, blockPuller, this.cachedCoinView).Register();
+
+                ConsensusRules consensusRules = new SmartContractPowConsensusRuleEngine(this.chain, new Checkpoints(), consensusSettings, dateTimeProvider, this.executorFactory, loggerFactory, this.network, nodeDeployments, this.stateRoot, blockPuller, new PersistentReceiptRepository(new DataFolder(folder)), senderRetriever, this.cachedCoinView).Register();
 
                 this.consensus = new ConsensusLoop(new AsyncLoopFactory(loggerFactory), new NodeLifetime(), this.chain, this.cachedCoinView, blockPuller, new NodeDeployments(this.network, this.chain), loggerFactory, new ChainState(new InvalidBlockHashStore(dateTimeProvider)), connectionManager, dateTimeProvider, new Signals.Signals(), consensusSettings, this.nodeSettings, peerBanning, consensusRules);
                 await this.consensus.StartAsync();
@@ -806,6 +822,58 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
             Assert.NotNull(context.stateRoot.GetCode(newContractAddress));
         }
 
+        /// <summary>
+        /// Should send funds to another contract, causing the contract's ReceiveHandler function to be invoked.
+        /// </summary>
+        [Fact]
+        public async Task SmartContracts_TransferFunds_Invokes_Receive_Async()
+        {
+            TestContext context = new TestContext();
+            await context.InitializeAsync();
+
+            ulong gasPrice = 1;
+            Gas gasLimit = (Gas)1000000;
+            var gasBudget = gasPrice * gasLimit;
+
+            var receiveContract = Path.Combine("SmartContracts", "ReceiveHandlerContract.cs");
+            var receiveCompilation = SmartContractCompiler.CompileFile(receiveContract).Compilation;
+
+            SmartContractCarrier contractTransaction = SmartContractCarrier.CreateContract(1, receiveCompilation, gasPrice, gasLimit);
+            Transaction tx = this.AddTransactionToMempool(context, contractTransaction, context.txFirst[0].GetHash(), 0, gasBudget);
+            BlockTemplate pblocktemplate = await this.BuildBlockAsync(context);
+            uint160 receiveContractAddress1 = context.AddressGenerator.GenerateAddress(tx.GetHash(), 0);
+            Assert.NotNull(context.stateRoot.GetCode(receiveContractAddress1));
+
+            context.mempool.Clear();
+
+            SmartContractCarrier contractTransaction2 = SmartContractCarrier.CreateContract(1, receiveCompilation, gasPrice, gasLimit);
+            tx = this.AddTransactionToMempool(context, contractTransaction2, context.txFirst[1].GetHash(), 0, gasBudget);
+            pblocktemplate = await this.BuildBlockAsync(context);
+            uint160 receiveContractAddress2 = context.AddressGenerator.GenerateAddress(tx.GetHash(), 0);
+            Assert.NotNull(context.stateRoot.GetCode(receiveContractAddress2));
+
+            context.mempool.Clear();
+
+            ulong fundsToSend = 1000;
+            string[] testMethodParameters = new string[]
+            {
+                string.Format("{0}#{1}", (int)SmartContractCarrierDataType.Address, receiveContractAddress2.ToAddress(context.network)),
+                string.Format("{0}#{1}", (int)SmartContractCarrierDataType.ULong, fundsToSend),
+            };
+
+            SmartContractCarrier transferTransaction = SmartContractCarrier.CallContract(1, receiveContractAddress1, "SendFunds", gasPrice, gasLimit, testMethodParameters);
+            pblocktemplate = await this.AddTransactionToMemPoolAndBuildBlockAsync(context, transferTransaction, context.txFirst[2].GetHash(), fundsToSend, gasBudget);
+            byte[] receiveInvoked = context.stateRoot.GetStorageValue(receiveContractAddress2, Encoding.UTF8.GetBytes("ReceiveInvoked"));
+            byte[] fundsReceived = context.stateRoot.GetStorageValue(receiveContractAddress2, Encoding.UTF8.GetBytes("ReceivedFunds"));
+
+            var serializer = new ContractPrimitiveSerializer(context.network);
+
+            Assert.NotNull(receiveInvoked);
+            Assert.NotNull(fundsReceived);
+            Assert.True(serializer.Deserialize<bool>(receiveInvoked));
+            Assert.Equal(fundsToSend, serializer.Deserialize<ulong>(fundsReceived));
+        }
+
         private async Task<BlockTemplate> AddTransactionToMemPoolAndBuildBlockAsync(TestContext context, SmartContractCarrier smartContractCarrier, uint256 prevOutHash, ulong value, ulong gasBudget)
         {
             this.AddTransactionToMempool(context, smartContractCarrier, prevOutHash, value, gasBudget);
@@ -844,14 +912,14 @@ namespace Stratis.Bitcoin.IntegrationTests.SmartContracts
         public MockServiceProvider(
             ICoinView coinView,
             ISmartContractExecutorFactory executorFactory,
-            ContractStateRepositoryRoot stateRoot,
+            ContractStateRoot stateRoot,
             ILoggerFactory loggerFactory)
         {
             this.registered = new Dictionary<Type, object>
             {
                 { typeof(ICoinView), coinView },
                 { typeof(ISmartContractExecutorFactory), executorFactory },
-                { typeof(ContractStateRepositoryRoot), stateRoot },
+                { typeof(ContractStateRoot), stateRoot },
                 { typeof(ILoggerFactory), loggerFactory }
             };
         }

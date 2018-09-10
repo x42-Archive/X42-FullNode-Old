@@ -141,6 +141,25 @@ namespace Stratis.Bitcoin.Connection
 
             this.StartNodeServer();
 
+            // If external IP address supplied this overrides all.
+            if (this.ConnectionSettings.ExternalEndpoint != null)
+            {
+                this.selfEndpointTracker.UpdateAndAssignMyExternalAddress(this.ConnectionSettings.ExternalEndpoint, true);
+            }
+            else
+            {
+                // If external IP address not supplied take first routable bind address and set score to 10.
+                IPEndPoint nodeServerEndpoint = this.ConnectionSettings.Listen?.FirstOrDefault(x => x.Endpoint.Address.IsRoutable(false))?.Endpoint;
+                if (nodeServerEndpoint != null)
+                {
+                    this.selfEndpointTracker.UpdateAndAssignMyExternalAddress(nodeServerEndpoint, false, 10);
+                }
+                else
+                {
+                    this.selfEndpointTracker.UpdateAndAssignMyExternalAddress(new IPEndPoint(IPAddress.Parse("0.0.0.0").MapToIPv6Ex(), this.ConnectionSettings.Port), false);
+                }
+            }
+
             this.logger.LogTrace("(-)");
         }
 
@@ -211,9 +230,6 @@ namespace Stratis.Bitcoin.Connection
             this.logger.LogTrace("(-)");
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
         public string GetStats()
         {
             var builder = new StringBuilder();
@@ -255,30 +271,6 @@ namespace Stratis.Bitcoin.Connection
             }
 
             return builder.ToString();
-=======
-=======
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-=======
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-        public int GetHighestTip()
-        {
-            var builder = new StringBuilder();
-            int highestTip = 0;
-
-            foreach (INetworkPeer peer in this.ConnectedPeers)
-            {
-                var chainHeadersBehavior = peer.Behavior<ConsensusManagerBehavior>();
-                highestTip = (chainHeadersBehavior.ExpectedPeerTip != null ? chainHeadersBehavior.ExpectedPeerTip.Height : peer.PeerVersion?.StartHeight) ?? 0;
-            }
-
-            return highestTip;
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-=======
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-=======
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
         }
 
         public string GetNodeStats()

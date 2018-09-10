@@ -42,16 +42,6 @@ namespace Stratis.Bitcoin.Connection
 
         INetworkPeer FindNodeById(int peerId);
 
-<<<<<<< HEAD
-=======
-        void RemoveConnectedPeer(INetworkPeer peer, string reason);
-
-        /// <summary>Notifies other components about peer being disconnected.</summary>
-        void PeerDisconnected(int networkPeerId);
-
-        int GetHighestTip();
-
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
         string GetNodeStats();
 
         string GetStats();

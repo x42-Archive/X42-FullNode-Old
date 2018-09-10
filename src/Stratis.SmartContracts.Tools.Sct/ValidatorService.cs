@@ -7,6 +7,7 @@ using Stratis.SmartContracts.Core.Validation;
 using Stratis.SmartContracts.Executor.Reflection;
 using Stratis.SmartContracts.Executor.Reflection.Compilation;
 using Stratis.SmartContracts.Executor.Reflection.Serialization;
+using Message = Stratis.SmartContracts.Core.Message;
 
 namespace Stratis.SmartContracts.Tools.Sct
 {
@@ -22,12 +23,12 @@ namespace Stratis.SmartContracts.Tools.Sct
             return validationServiceResult;
         }
 
-        private static void BuildModuleDefinition(IConsole console, ValidationServiceResult validationServiceResult, out byte[] compilation, out SmartContractDecompilation decompilation)
+        private static void BuildModuleDefinition(IConsole console, ValidationServiceResult validationServiceResult, out byte[] compilation, out IContractModuleDefinition moduleDefinition)
         {
             console.WriteLine("Building ModuleDefinition...");
 
             compilation = validationServiceResult.CompilationResult.Compilation;
-            decompilation = SmartContractDecompiler.GetModuleDefinition(compilation, new DotNetCoreAssemblyResolver());
+            moduleDefinition = SmartContractDecompiler.GetModuleDefinition(compilation, new DotNetCoreAssemblyResolver());
             console.WriteLine("ModuleDefinition built successfully.");
 
             console.WriteLine();
@@ -48,9 +49,9 @@ namespace Stratis.SmartContracts.Tools.Sct
         private static void ValidateContract(string fileName, IConsole console, string[] parameters, ValidationServiceResult validationServiceResult)
         {
             byte[] compilation;
-            SmartContractDecompilation decompilation;
+            IContractModuleDefinition moduleDefinition;
 
-            BuildModuleDefinition(console, validationServiceResult, out compilation, out decompilation);
+            BuildModuleDefinition(console, validationServiceResult, out compilation, out moduleDefinition);
 
             console.WriteLine($"Validating file {fileName}...");
 
@@ -72,8 +73,8 @@ namespace Stratis.SmartContracts.Tools.Sct
                 console.WriteLine("No constructor exists with the provided parameters.");
             }
 
-            validationServiceResult.DeterminismValidationResult = new SctDeterminismValidator().Validate(decompilation);
-            validationServiceResult.FormatValidationResult = new SmartContractFormatValidator().Validate(decompilation.ModuleDefinition);
+            validationServiceResult.DeterminismValidationResult = new SctDeterminismValidator().Validate(moduleDefinition);
+            validationServiceResult.FormatValidationResult = new SmartContractFormatValidator().Validate(moduleDefinition.ModuleDefinition);
             if (!validationServiceResult.DeterminismValidationResult.IsValid || !validationServiceResult.FormatValidationResult.IsValid)
                 console.WriteLine("Smart Contract failed validation. Run validate [FILE] for more info.");
 
@@ -122,6 +123,10 @@ namespace Stratis.SmartContracts.Tools.Sct
         public IInternalHashHelper InternalHashHelper => null;
 
         public Func<ulong> GetBalance => null;
+
+        public IContractLogger ContractLogger => null;
+
+        public ISerializer Serializer => null;
     }
 
     public sealed class ValidatorPersistentState : IPersistentState

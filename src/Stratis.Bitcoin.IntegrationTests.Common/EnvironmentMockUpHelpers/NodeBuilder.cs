@@ -41,14 +41,12 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
 
         public static NodeBuilder Create(object caller, [CallerMemberName] string callingMethod = null)
         {
-            KillAnyBitcoinInstances();
             string testFolderPath = TestBase.CreateTestDir(caller, callingMethod);
             return new NodeBuilder(testFolderPath);
         }
 
         public static NodeBuilder Create(string testDirectory)
         {
-            KillAnyBitcoinInstances();
             string testFolderPath = TestBase.CreateTestDir(testDirectory);
             return new NodeBuilder(testFolderPath);
         }
@@ -139,7 +137,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
         /// <summary>A helper method to create a node instance with a non-standard set of features enabled. The node can be PoW or PoS, as long as the appropriate features are provided.</summary>
         /// <param name="callback">A callback accepting an instance of <see cref="IFullNodeBuilder"/> that constructs a node with a custom feature set.</param>
         /// <param name="network">The network the node will be running on.</param>
-        /// <param name="protocolVersion">Use <see cref="ProtocolVersion.PROTOCOL_VERSION"/> for BTC PoW-like networks and <see cref="ProtocolVersion.X42_PROTOCOL_VERSION"/> for Stratis PoS-like networks.</param>
+        /// <param name="protocolVersion">Use <see cref="ProtocolVersion.PROTOCOL_VERSION"/> for BTC PoW-like networks and <see cref="ProtocolVersion.ALT_PROTOCOL_VERSION"/> for Stratis PoS-like networks.</param>
         /// <param name="agent">A user agent string to distinguish different node versions from each other.</param>
         /// <param name="configParameters">Use this to pass in any custom configuration parameters used to set up the CoreNode</param>
         public CoreNode CreateCustomNode(bool start, Action<IFullNodeBuilder> callback, Network network, ProtocolVersion protocolVersion = ProtocolVersion.PROTOCOL_VERSION, string agent = "Custom", NodeConfigParameters configParameters = null)
@@ -177,25 +175,6 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.EnvironmentMockUpHelpers
         {
             foreach (CoreNode node in this.Nodes)
                 node.Kill();
-
-            KillAnyBitcoinInstances();
-        }
-
-        internal static void KillAnyBitcoinInstances()
-        {
-            while (true)
-            {
-                Process[] bitcoinDProcesses = Process.GetProcessesByName("bitcoind");
-                IEnumerable<Process> applicableBitcoinDProcesses = bitcoinDProcesses.Where(b => b.MainModule.FileName.Contains("External Libs"));
-                if (!applicableBitcoinDProcesses.Any())
-                    break;
-
-                foreach (Process process in applicableBitcoinDProcesses)
-                {
-                    process.Kill();
-                    Thread.Sleep(1000);
-                }
-            }
         }
     }
 }

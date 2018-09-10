@@ -25,7 +25,7 @@ namespace Stratis.Bitcoin.IntegrationTests.API
         {
             Given(a_proof_of_work_node_with_api_enabled);
             When(calling_rpc_getblockhash_via_callbyname);
-            Then(the_blockhash_is_returned);
+            Then(the_blockhash_is_returned_from_post);
         }
 
         [Fact]
@@ -48,7 +48,7 @@ namespace Stratis.Bitcoin.IntegrationTests.API
         }
 
         [Fact]
-        public void AddNewAccount_for_xpub_only_wallet_informs_user_to_create_new_wallet_()
+        public void AddNewAccount_for_xpub_only_wallet_informs_user_to_create_new_wallet()
         {
             Given(a_proof_of_stake_node_with_api_enabled);
             Given(an_extpubkey_only_wallet_with_account_0);

@@ -151,7 +151,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
             {
                 Mnemonic requestMnemonic = string.IsNullOrEmpty(request.Mnemonic) ? null : new Mnemonic(request.Mnemonic);
 
-                Mnemonic mnemonic = this.walletManager.CreateWallet(request.Password, request.Name, mnemonic: requestMnemonic);
+                Mnemonic mnemonic = this.walletManager.CreateWallet(request.Password, request.Name, request.Passphrase, mnemonic: requestMnemonic);
 
                 // start syncing the wallet from the creation date
                 this.walletSyncManager.SyncFromDate(this.dateTimeProvider.GetUtcNow());
@@ -229,7 +229,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
 
             try
             {
-                Wallet wallet = this.walletManager.RecoverWallet(request.Password, request.Name, request.Mnemonic, request.CreationDate);
+                Wallet wallet = this.walletManager.RecoverWallet(request.Password, request.Name, request.Mnemonic, request.CreationDate, passphrase: request.Passphrase);
 
                 this.SyncFromBestHeightForRecoveredWallets(request.CreationDate);
 
@@ -340,19 +340,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     CreationTime = wallet.CreationTime,
                     LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                     ChainTip = this.chain.Tip.Height,
-=======
-                    ChainTip = this.connectionManager.GetHighestTip(),
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-=======
-                    ChainTip = this.connectionManager.GetHighestTip(),
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
-=======
-                    ChainTip = this.connectionManager.GetHighestTip(),
->>>>>>> parent of ace5bf0... Return the highest height for GetHighestPeerHeight
                     IsChainSynced = this.chain.IsDownloaded(),
                     IsDecrypted = true
                 };

@@ -77,6 +77,8 @@ public class Auction : SmartContract
         Owner = Message.Sender;
         EndBlock = Block.Number + durationBlocks;
         HasEnded = false;
+
+        Log(new Created { duration = durationBlocks, sender = Message.Sender });
     }
 
     public void Bid()
@@ -108,5 +110,12 @@ public class Auction : SmartContract
         Assert(!HasEnded);
         HasEnded = true;
         Transfer(Owner, HighestBid);
+    }
+
+    public struct Created
+    {
+        [Index]
+        public ulong duration;
+        public string sender;
     }
 }

@@ -11,15 +11,17 @@ namespace Stratis.SmartContracts.Executor.Reflection
     /// <summary>
     /// Represents a low-level contract module that can be modified (via IL rewriting) and validated.
     /// </summary>
-    public sealed class SmartContractDecompilation : ISmartContractDecompilation
+    public sealed class ContractModuleDefinition : IContractModuleDefinition
     {
         private List<TypeDefinition> developedTypes;
 
         private TypeDefinition contractType;
+        private readonly MemoryStream stream;
 
-        public SmartContractDecompilation(ModuleDefinition moduleDefinition)
+        public ContractModuleDefinition(ModuleDefinition moduleDefinition, MemoryStream stream)
         {
             this.ModuleDefinition = moduleDefinition;
+            this.stream = stream;
         }
 
         /// <inheritdoc />
@@ -81,9 +83,15 @@ namespace Stratis.SmartContracts.Executor.Reflection
         /// <remarks>
         /// TODO - Make this a generic 'rewrite' method and pass in a rewriter.
         /// </remarks>
-        public void InjectMethodGas(string typeName, string methodName)
+        public void InjectMethodGas(string typeName, MethodCall methodCall)
         {
-            this.ModuleDefinition = SmartContractGasInjector.AddGasCalculationToContractMethod(this.ModuleDefinition, typeName, methodName);
+            this.ModuleDefinition = SmartContractGasInjector.AddGasCalculationToContractMethod(this.ModuleDefinition, typeName, methodCall.Name);
+        }
+
+        public void Dispose()
+        {
+            this.stream?.Dispose();
+            this.ModuleDefinition?.Dispose();
         }
     }
 }
