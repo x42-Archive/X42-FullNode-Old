@@ -142,12 +142,10 @@ namespace Stratis.Bitcoin.Networks
 
             this.DNSSeeds = new List<DNSSeedData>
             {
-                new DNSSeedData("seednode4.x42.tech", "seednode4.x42.tech"),
-                new DNSSeedData("seednode5.x42.tech", "seednode5.x42.tech"),
-                new DNSSeedData("seednode6.x42.tech", "seednode6.x42.tech")
+                new DNSSeedData("seednode2.x42.tech", "seednode2.x42.tech"),
             };
 
-            string[] seedNodes = { "34.255.35.42", "18.223.166.44", "177.18.126.60", "96.73.27.75" };
+            string[] seedNodes = { "34.255.35.42", "18.223.166.44", "177.18.126.60" };
             this.SeedNodes = ConvertToNetworkAddresses(seedNodes, this.DefaultPort).ToList();
 
             Assert(this.Consensus.HashGenesisBlock == uint256.Parse("0x04ffe583707a96c1c2eb54af33a4b1dc6d9d8e09fea8c9a7b097ba88f0cb64c4"));
