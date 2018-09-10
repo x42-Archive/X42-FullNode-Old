@@ -399,7 +399,7 @@ namespace Stratis.Bitcoin.Features.Miner
                 if (packageFees < this.BlockMinFeeRate.GetFee((int)packageSize))
                 {
                     // Everything else we might consider has a lower fee rate
-                    return;
+                    //return;
                 }
 
                 if (!this.TestPackage(packageSize, packageSigOpsCost))
