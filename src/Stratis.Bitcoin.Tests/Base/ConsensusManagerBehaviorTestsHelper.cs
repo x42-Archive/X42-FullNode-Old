@@ -94,7 +94,8 @@ namespace Stratis.Bitcoin.Tests.Base
             var connectionManagerMock = new Mock<IConnectionManager>();
             connectionManagerMock.SetupGet(x => x.ConnectionSettings).Returns(new ConnectionManagerSettings(new NodeSettings(KnownNetworks.StratisMain)));
 
-            var cmBehavior = new ConsensusManagerBehavior(chain, ibdState.Object, cmMock.Object, this.testPeerBanning, this.loggerFactory);
+            var cmBehavior = new ConsensusManagerBehavior(chain, ibdState.Object, cmMock.Object, this.testPeerBanning,
+                connectionManagerMock.Object, this.loggerFactory);
 
             // Peer and behavior
             this.PeerMock = this.CreatePeerMock();
@@ -199,11 +200,6 @@ namespace Stratis.Bitcoin.Tests.Base
             public bool WasBanningCalled = false;
 
             public void BanAndDisconnectPeer(IPEndPoint endpoint, int banTimeSeconds, string reason = null)
-            {
-                this.WasBanningCalled = true;
-            }
-
-            public void BanAndDisconnectPeer(IPEndPoint endpoint, string reason = null)
             {
                 this.WasBanningCalled = true;
             }

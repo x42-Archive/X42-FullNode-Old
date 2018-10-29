@@ -2,7 +2,6 @@
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.Consensus.Rules.CommonRules;
 using Stratis.Bitcoin.Features.MemoryPool;
@@ -24,7 +23,7 @@ namespace Stratis.Bitcoin.Features.Miner
         protected ChainedHeader ChainTip;
 
         /// <summary>Manager of the longest fully validated chain of blocks.</summary>
-        protected readonly IConsensusManager ConsensusManager;
+        protected readonly IConsensusLoop ConsensusLoop;
 
         /// <summary>Provider of date time functions.</summary>
         protected readonly IDateTimeProvider DateTimeProvider;
@@ -111,7 +110,7 @@ namespace Stratis.Bitcoin.Features.Miner
         protected Script scriptPubKey;
 
         protected BlockDefinition(
-            IConsensusManager consensusManager,
+            IConsensusLoop consensusLoop,
             IDateTimeProvider dateTimeProvider,
             ILoggerFactory loggerFactory,
             ITxMempool mempool,
@@ -119,7 +118,7 @@ namespace Stratis.Bitcoin.Features.Miner
             MinerSettings minerSettings,
             Network network)
         {
-            this.ConsensusManager = consensusManager;
+            this.ConsensusLoop = consensusLoop;
             this.DateTimeProvider = dateTimeProvider;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.Mempool = mempool;
@@ -141,7 +140,7 @@ namespace Stratis.Bitcoin.Features.Miner
         protected virtual void ComputeBlockVersion()
         {
             this.height = this.ChainTip.Height + 1;
-            var headerVersionRule = this.ConsensusManager.ConsensusRules.GetRule<HeaderVersionRule>();
+            var headerVersionRule = this.ConsensusLoop.ConsensusRules.GetRule<HeaderVersionRule>();
             this.block.Header.Version = headerVersionRule.ComputeBlockVersion(this.ChainTip);
         }
 
@@ -226,7 +225,7 @@ namespace Stratis.Bitcoin.Features.Miner
             // TODO: Implement Witness Code
             // pblocktemplate->CoinbaseCommitment = GenerateCoinbaseCommitment(*pblock, pindexPrev, chainparams.GetConsensus());
 
-            var coinviewRule = this.ConsensusManager.ConsensusRules.GetRule<CoinViewRule>();
+            var coinviewRule = this.ConsensusLoop.ConsensusRules.GetRule<CoinViewRule>();
             this.coinbase.Outputs[0].Value = this.fees + coinviewRule.GetProofOfWorkReward(this.height);
             this.BlockTemplate.TotalFee = this.fees;
 
@@ -400,7 +399,7 @@ namespace Stratis.Bitcoin.Features.Miner
                 if (packageFees < this.BlockMinFeeRate.GetFee((int)packageSize))
                 {
                     // Everything else we might consider has a lower fee rate
-                    return;
+                    //return;
                 }
 
                 if (!this.TestPackage(packageSize, packageSigOpsCost))

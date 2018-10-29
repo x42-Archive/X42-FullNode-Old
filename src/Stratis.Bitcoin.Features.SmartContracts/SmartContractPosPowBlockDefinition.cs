@@ -47,7 +47,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
         public SmartContractPosPowBlockDefinition(
             IBlockBufferGenerator blockBufferGenerator,
             ICoinView coinView,
-            IConsensusManager consensusManager,
+            IConsensusLoop consensusLoop,
             IDateTimeProvider dateTimeProvider,
             ISmartContractExecutorFactory executorFactory,
             ILoggerFactory loggerFactory,
@@ -59,7 +59,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
             IStakeChain stakeChain,
             IStakeValidator stakeValidator,
             IContractStateRoot stateRoot)
-            : base(consensusManager, dateTimeProvider, loggerFactory, mempool, mempoolLock, minerSettings, network)
+            : base(consensusLoop, dateTimeProvider, loggerFactory, mempool, mempoolLock, minerSettings, network)
         {
             this.coinView = coinView;
             this.executorFactory = executorFactory;
@@ -103,10 +103,10 @@ namespace Stratis.Bitcoin.Features.SmartContracts
                 this.UpdateTotalFees(result.Fee);
 
                 // If there are refunds, add them to the block.
-                if (result.Refunds.Any())
+                if (result.Refund != null)
                 {
-                    this.refundOutputs.AddRange(result.Refunds);
-                    this.logger.LogTrace("{0} refunds were added.", result.Refunds.Count);
+                    this.refundOutputs.Add(result.Refund);
+                    this.logger.LogTrace("refund was added with value {0}.", result.Refund.Value);
                 }
 
                 // Add internal transactions made during execution.
@@ -131,7 +131,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts
 
             this.coinbaseAddress = getSenderResult.Sender;
 
-            this.stateSnapshot = this.stateRoot.GetSnapshotTo(((SmartContractBlockHeader)this.ConsensusManager.Tip.Header).HashStateRoot.ToBytes());
+            this.stateSnapshot = this.stateRoot.GetSnapshotTo(((SmartContractBlockHeader)this.ConsensusLoop.Tip.Header).HashStateRoot.ToBytes());
 
             this.refundOutputs.Clear();
             this.receipts.Clear();

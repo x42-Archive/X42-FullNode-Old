@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -36,15 +35,17 @@ namespace Stratis.Bitcoin.P2P.Peer
 
         public CancellationToken ConnectCancellation { get; set; }
 
-        public List<INetworkPeerBehavior> TemplateBehaviors { get; }
+        private readonly NetworkPeerBehaviorsCollection templateBehaviors = new NetworkPeerBehaviorsCollection(null);
+
+        public NetworkPeerBehaviorsCollection TemplateBehaviors { get { return this.templateBehaviors; } }
 
         public NetworkPeerConnectionParameters()
         {
+            this.TemplateBehaviors.Add(new PingPongBehavior());
             this.Version = ProtocolVersion.PROTOCOL_VERSION;
             this.IsRelay = true;
             this.Services = NetworkPeerServices.Nothing;
             this.ConnectCancellation = default(CancellationToken);
-            this.TemplateBehaviors = new List<INetworkPeerBehavior>();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -63,7 +64,7 @@ namespace Stratis.Bitcoin.P2P.Peer
             this.Nonce = RandomUtils.GetUInt64();
         }
 
-        public NetworkPeerConnectionParameters SetFrom(NetworkPeerConnectionParameters other)
+        public NetworkPeerConnectionParameters(NetworkPeerConnectionParameters other)
         {
             this.Version = other.Version;
             this.IsRelay = other.IsRelay;
@@ -81,13 +82,11 @@ namespace Stratis.Bitcoin.P2P.Peer
             {
                 this.TemplateBehaviors.Add(behavior.Clone());
             }
-
-            return this;
         }
 
         public NetworkPeerConnectionParameters Clone()
         {
-            return new NetworkPeerConnectionParameters().SetFrom(this);
+            return new NetworkPeerConnectionParameters(this);
         }
 
         public VersionPayload CreateVersion(IPEndPoint externalAddressEndPoint, IPEndPoint peerAddress, Network network, DateTimeOffset timeStamp)

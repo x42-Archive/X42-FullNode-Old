@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using Stratis.Bitcoin.Tests.Common;
+using Stratis.Bitcoin.Features.RPC;
 
 namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
 {
@@ -66,7 +67,7 @@ namespace Stratis.Bitcoin.IntegrationTests.Common.Runners
                     return false;
                 }
             }, cancellationToken: new CancellationTokenSource(duration).Token,
-                failureReason: $"Failed to start BitcoinD within {duration} seconds");
+                failureReason:$"Failed to start BitcoinD within {duration} seconds");
         }
 
         public override void BuildNode()

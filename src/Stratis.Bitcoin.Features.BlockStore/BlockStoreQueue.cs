@@ -28,7 +28,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
     /// When block store is being initialized we delete blocks that are not on the best chain.
     /// </para>
     /// </remarks>
-    public class BlockStoreQueue : IBlockStoreQueue
+    public class BlockStoreQueue : IBlockStore, IDisposable
     {
         /// <summary>Maximum interval between saving batches.</summary>
         /// <remarks>Interval value is a prime number that wasn't used as an interval in any other component. That prevents having CPU consumption spikes.</remarks>
@@ -42,7 +42,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
         /// <summary>The highest stored block in the repository.</summary>
         private ChainedHeader storeTip;
-
+        
         /// <inheritdoc cref="ILogger"/>
         private readonly ILogger logger;
 
@@ -65,36 +65,31 @@ namespace Stratis.Bitcoin.Features.BlockStore
         private readonly AsyncQueue<ChainedHeaderBlock> blocksQueue;
 
         /// <summary>Batch of blocks which should be saved in the database.</summary>
-        /// <remarks>Write access should be protected by <see cref="getBlockLock"/>.</remarks>
         private readonly List<ChainedHeaderBlock> batch;
 
         /// <summary>Task that runs <see cref="DequeueBlocksContinuouslyAsync"/>.</summary>
         private Task dequeueLoopTask;
-
-        /// <summary>Protects the batch from being modifying while <see cref="GetBlockAsync"/> method is using the batch.</summary>
-        private readonly object getBlockLock;
-
         public BlockStoreQueue(
+            IBlockRepository blockRepository,
             ConcurrentChain chain,
             IChainState chainState,
             StoreSettings storeSettings,
             INodeLifetime nodeLifetime,
-            IBlockRepository blockRepository,
             ILoggerFactory loggerFactory)
         {
+            Guard.NotNull(blockRepository, nameof(blockRepository));
             Guard.NotNull(chain, nameof(chain));
             Guard.NotNull(chainState, nameof(chainState));
             Guard.NotNull(storeSettings, nameof(storeSettings));
             Guard.NotNull(nodeLifetime, nameof(nodeLifetime));
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
-
+            
             this.chainState = chainState;
             this.nodeLifetime = nodeLifetime;
             this.storeSettings = storeSettings;
             this.chain = chain;
             this.blockRepository = blockRepository;
             this.batch = new List<ChainedHeaderBlock>();
-            this.getBlockLock = new object();
 
             this.blocksQueue = new AsyncQueue<ChainedHeaderBlock>();
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -116,17 +111,15 @@ namespace Stratis.Bitcoin.Features.BlockStore
         {
             this.logger.LogTrace("()");
 
-            await this.blockRepository.InitializeAsync().ConfigureAwait(false);
-
             if (this.storeSettings.ReIndex)
             {
                 await this.blockRepository.SetTxIndexAsync(this.storeSettings.TxIndex).ConfigureAwait(false);
                 await this.blockRepository.ReIndexAsync().ConfigureAwait(false);
             }
 
-            ChainedHeader initializationTip = this.chain.GetBlock(this.blockRepository.TipHashAndHeight.Hash);
+            ChainedHeader initializationTip = this.chain.GetBlock(this.blockRepository.BlockHash);
             this.SetStoreTip(initializationTip);
-
+            
             if (this.storeTip == null)
                 await this.RecoverStoreTipAsync().ConfigureAwait(false);
 
@@ -144,7 +137,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 // Always set the TxIndex here.
                 await this.blockRepository.SetTxIndexAsync(this.storeSettings.TxIndex).ConfigureAwait(false);
             }
-
+            
             // Throw if block store was initialized after the consensus.
             // This is needed in order to rewind consensus in case it is initialized ahead of the block store.
             if (this.chainState.ConsensusTip != null)
@@ -178,19 +171,10 @@ namespace Stratis.Bitcoin.Features.BlockStore
         {
             this.logger.LogTrace("({0}:'{1}')", nameof(blockHash), blockHash);
 
-            Block block = null;
-
-            lock (this.getBlockLock)
-            {
-                block = this.batch.FirstOrDefault(x => x.ChainedHeader.HashBlock == blockHash)?.Block;
-            }
-
-            if (block == null)
-                block = await this.blockRepository.GetBlockAsync(blockHash).ConfigureAwait(false);
-            else
-                this.logger.LogTrace("Block was found in the batch.");
+            Block block = await this.blockRepository.GetAsync(blockHash).ConfigureAwait(false);
 
             this.logger.LogTrace("(-)");
+
             return block;
         }
 
@@ -209,9 +193,8 @@ namespace Stratis.Bitcoin.Features.BlockStore
             this.logger.LogTrace("()");
 
             var blockStoreResetList = new List<uint256>();
-
-            uint256 resetBlockHash = this.blockRepository.TipHashAndHeight.Hash;
-            Block resetBlock = await this.blockRepository.GetBlockAsync(resetBlockHash).ConfigureAwait(false);
+            uint256 resetBlockHash = this.blockRepository.BlockHash;
+            Block resetBlock = await this.blockRepository.GetAsync(resetBlockHash).ConfigureAwait(false);
 
             while (this.chain.GetBlock(resetBlockHash) == null)
             {
@@ -223,7 +206,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
                     break;
                 }
 
-                resetBlock = await this.blockRepository.GetBlockAsync(resetBlock.Header.HashPrevBlock).ConfigureAwait(false);
+                resetBlock = await this.blockRepository.GetAsync(resetBlock.Header.HashPrevBlock).ConfigureAwait(false);
 
                 if (resetBlock == null)
                 {
@@ -237,7 +220,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
             ChainedHeader newTip = this.chain.GetBlock(resetBlockHash);
 
             if (blockStoreResetList.Count != 0)
-                await this.blockRepository.DeleteAsync(new HashHeightPair(newTip), blockStoreResetList).ConfigureAwait(false);
+                await this.blockRepository.DeleteAsync(newTip.HashBlock, blockStoreResetList).ConfigureAwait(false);
 
             this.SetStoreTip(newTip);
 
@@ -249,11 +232,10 @@ namespace Stratis.Bitcoin.Features.BlockStore
             this.logger.LogTrace("(-)");
         }
 
-        /// <inheritdoc />
+
+        /// <summary>Shows the stats to the console.</summary>
         public void ShowStats(StringBuilder benchLog)
         {
-            this.logger.LogTrace("()");
-
             if (this.storeTip != null)
             {
                 benchLog.AppendLine();
@@ -261,11 +243,12 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 benchLog.AppendLine($"Pending Blocks: {this.batch.Count}");
                 benchLog.AppendLine($"Batch Size: {this.currentBatchSizeBytes / 1000} kb / {BatchThresholdSizeBytes / 1000} kb");
             }
-
-            this.logger.LogTrace("(-)");
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Adds a block to the saving queue.
+        /// </summary>
+        /// <param name="chainedHeaderBlock">The block and its chained header pair to be added to pending storage.</param>
         public void AddToPending(ChainedHeaderBlock chainedHeaderBlock)
         {
             this.logger.LogTrace("({0}:'{1}')", nameof(chainedHeaderBlock), chainedHeaderBlock.ChainedHeader);
@@ -274,7 +257,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             this.logger.LogTrace("(-)");
         }
-
+        
         /// <summary>
         /// Dequeues the blocks continuously and saves them to the database when max batch size is reached or timer ran out.
         /// </summary>
@@ -309,8 +292,8 @@ namespace Stratis.Bitcoin.Features.BlockStore
                     this.logger.LogDebug("Node is shutting down. Save batch.");
                 }
 
-                // Save batch if timer ran out or we've dequeued a new block and reached the consensus tip
-                // or the max batch size is reached or the node is shutting down.
+                // Save batch if timer ran out or we've dequeued a new block and reached the consensus tip 
+                // or the max batch size is reached or the node is shutting down.  
                 if (dequeueTask.Status == TaskStatus.RanToCompletion)
                 {
                     ChainedHeaderBlock item = dequeueTask.Result;
@@ -318,14 +301,11 @@ namespace Stratis.Bitcoin.Features.BlockStore
                     // Set the dequeue task to null so it can be assigned on the next iteration.
                     dequeueTask = null;
 
-                    lock (this.getBlockLock)
-                    {
-                        this.batch.Add(item);
-                    }
+                    batch.Add(item);
 
                     this.currentBatchSizeBytes += item.Block.BlockSize.Value;
 
-                    saveBatch = saveBatch || (this.currentBatchSizeBytes >= BatchThresholdSizeBytes) || this.chainState.IsAtBestChainTip;
+                    saveBatch = saveBatch || (item.ChainedHeader == this.chain.Tip) || (this.currentBatchSizeBytes >= BatchThresholdSizeBytes);
                 }
                 else
                 {
@@ -335,15 +315,11 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
                 if (saveBatch)
                 {
-                    if (this.batch.Count != 0)
+                    if (batch.Count != 0)
                     {
-                        await this.SaveBatchAsync().ConfigureAwait(false);
+                        await this.SaveBatchAsync(batch).ConfigureAwait(false);
 
-                        lock (this.getBlockLock)
-                        {
-                            this.batch.Clear();
-                        }
-
+                        batch.Clear();
                         this.currentBatchSizeBytes = 0;
                     }
 
@@ -356,21 +332,19 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 }
             }
 
-            if (this.batch.Count != 0)
-                await this.SaveBatchAsync().ConfigureAwait(false);
-
             this.logger.LogTrace("(-)");
         }
-
+        
         /// <summary>
         /// Checks if repository contains reorged blocks and deletes them; saves batch on top.
         /// The last block in the list is considered to be on the current main chain and will be used to determine if a database reorg is required.
         /// </summary>
-        private async Task SaveBatchAsync()
+        /// <param name="batch">List of batched blocks. Cannot be empty.</param>
+        private async Task SaveBatchAsync(List<ChainedHeaderBlock> batch)
         {
-            this.logger.LogTrace("()");
+            this.logger.LogTrace("({0}.{1}:{2})", nameof(batch), nameof(batch.Count), batch.Count);
 
-            List<ChainedHeaderBlock> clearedBatch = this.GetBatchWithoutReorgedBlocks();
+            List<ChainedHeaderBlock> clearedBatch = this.GetBatchWithoutReorgedBlocks(batch);
 
             ChainedHeader expectedStoreTip = clearedBatch.First().ChainedHeader.Previous;
 
@@ -383,7 +357,7 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             this.logger.LogDebug("Saving batch of {0} blocks, total size: {1} bytes.", clearedBatch.Count, this.currentBatchSizeBytes);
 
-            await this.blockRepository.PutAsync(new HashHeightPair(newTip), clearedBatch.Select(b => b.Block).ToList()).ConfigureAwait(false);
+            await this.blockRepository.PutAsync(newTip.HashBlock, clearedBatch.Select(b => b.Block).ToList()).ConfigureAwait(false);
 
             this.SetStoreTip(newTip);
             this.logger.LogDebug("Store tip set to '{0}'.", this.storeTip);
@@ -395,28 +369,29 @@ namespace Stratis.Bitcoin.Features.BlockStore
         /// Cleans the batch in a way that all headers from the latest one are consecutive.
         /// Those that violate consecutiveness are removed.
         /// </summary>
+        /// <param name="batch">Uncleaned batch that might contain non-consecutive blocks. Cannot be empty.</param>
         /// <returns>List of consecutive blocks.</returns>
-        private List<ChainedHeaderBlock> GetBatchWithoutReorgedBlocks()
+        private List<ChainedHeaderBlock> GetBatchWithoutReorgedBlocks(List<ChainedHeaderBlock> batch)
         {
-            this.logger.LogTrace("()");
+            this.logger.LogTrace("({0}.{1}:{2})", nameof(batch), nameof(batch.Count), batch.Count);
 
             // Initialize current with highest block from the batch.
-            ChainedHeaderBlock current = this.batch.Last();
+            ChainedHeaderBlock current = batch.Last();
 
             // List of consecutive blocks. It's a cleaned out version of batch that doesn't have blocks that were reorged.
-            var batchCleared = new List<ChainedHeaderBlock>(this.batch.Count) { current };
-
+            var batchCleared = new List<ChainedHeaderBlock>(batch.Count) { current };
+            
             // Select only those blocks that were not reorged away.
-            for (int i = this.batch.Count - 2; i >= 0; i--)
+            for (int i = batch.Count - 2; i >= 0; i--)
             {
-                if (this.batch[i].ChainedHeader.HashBlock != current.ChainedHeader.Previous.HashBlock)
+                if (batch[i].ChainedHeader.HashBlock != current.ChainedHeader.Previous.HashBlock)
                 {
-                    this.logger.LogDebug("Block '{0}' removed from the batch because it was reorged.", this.batch[i].ChainedHeader);
+                    this.logger.LogDebug("Block '{0}' removed from the batch because it was reorged.", batch[i].ChainedHeader);
                     continue;
                 }
 
-                batchCleared.Add(this.batch[i]);
-                current = this.batch[i];
+                batchCleared.Add(batch[i]);
+                current = batch[i];
             }
 
             batchCleared.Reverse();
@@ -442,8 +417,8 @@ namespace Stratis.Bitcoin.Features.BlockStore
 
             this.logger.LogDebug("Block store reorg detected. Removing {0} blocks from the database.", blocksToDelete.Count);
 
-            await this.blockRepository.DeleteAsync(new HashHeightPair(currentHeader), blocksToDelete).ConfigureAwait(false);
-
+            await this.blockRepository.DeleteAsync(currentHeader.HashBlock, blocksToDelete).ConfigureAwait(false);
+            
             this.SetStoreTip(expectedStoreTip);
             this.logger.LogDebug("Store tip rewound to '{0}'.", this.storeTip);
 
@@ -458,7 +433,6 @@ namespace Stratis.Bitcoin.Features.BlockStore
             // Let current batch saving task finish.
             this.blocksQueue.Dispose();
             this.dequeueLoopTask?.GetAwaiter().GetResult();
-            this.blockRepository.Dispose();
 
             this.logger.LogTrace("(-)");
         }

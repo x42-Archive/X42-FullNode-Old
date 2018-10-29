@@ -55,15 +55,12 @@ namespace Stratis.Bitcoin.Features.Consensus
             ChainedHeader next = this.chain.GetBlock(hash);
             var load = new List<StakeItem>();
 
-            if (next != null)
+            while (next != this.chain.Genesis)
             {
-                while (next != this.chain.Genesis)
-                {
-                    load.Add(new StakeItem { BlockId = next.HashBlock, Height = next.Height });
-                    if ((load.Count >= this.threshold) || (next.Previous == null))
-                        break;
-                    next = next.Previous;
-                }
+                load.Add(new StakeItem { BlockId = next.HashBlock, Height = next.Height });
+                if ((load.Count >= this.threshold) || (next.Previous == null))
+                    break;
+                next = next.Previous;
             }
 
             await this.dBreezeCoinView.GetStakeAsync(load).ConfigureAwait(false);
@@ -113,7 +110,8 @@ namespace Stratis.Bitcoin.Features.Consensus
             }
 
             BlockStake res = this.GetAsync(blockid).GetAwaiter().GetResult();
-            this.logger.LogTrace("(-):*.{0}='{1}'", nameof(res.HashProof), res.HashProof);
+            if (res != null) this.logger.LogTrace("(-):*.{0}='{1}'", nameof(res.HashProof), res.HashProof);
+            else this.logger.LogTrace("(-):null");
             return res;
         }
 

@@ -17,6 +17,7 @@ using Stratis.Bitcoin.Connection;
 using Stratis.Bitcoin.Controllers.Models;
 using Stratis.Bitcoin.Features.Api;
 using Stratis.Bitcoin.Features.BlockStore.Models;
+using Stratis.Bitcoin.Features.Miner;
 using Stratis.Bitcoin.Features.Miner.Controllers;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Features.Miner.Models;
@@ -389,12 +390,12 @@ namespace Stratis.Bitcoin.IntegrationTests.API
 
         private void the_consensus_tip_blockhash_is_returned()
         {
-            this.responseText.Should().Be("\"" + this.nodes[FirstPowNode].FullNode.ConsensusManager().Tip.HashBlock.ToString() + "\"");
+            this.responseText.Should().Be("\"" + this.nodes[FirstPowNode].FullNode.ConsensusLoop().Tip.HashBlock.ToString() + "\"");
         }
 
         private void the_blockcount_should_match_consensus_tip_height()
         {
-            this.responseText.Should().Be(this.nodes[FirstPowNode].FullNode.ConsensusManager().Tip.Height.ToString());
+            this.responseText.Should().Be(this.nodes[FirstPowNode].FullNode.ConsensusLoop().Tip.Height.ToString());
         }
 
         private void the_real_block_should_be_retrieved()

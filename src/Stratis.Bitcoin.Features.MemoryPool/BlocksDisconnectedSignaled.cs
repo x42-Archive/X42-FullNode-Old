@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
 
 namespace Stratis.Bitcoin.Features.MemoryPool
@@ -9,7 +8,7 @@ namespace Stratis.Bitcoin.Features.MemoryPool
     /// <summary>
     /// Mempool observer on disconnected block notifications.
     /// </summary>
-    public class BlocksDisconnectedSignaled : SignalObserver<ChainedHeaderBlock>
+    public class BlocksDisconnectedSignaled : SignalObserver<Block>
     {
         private readonly IMempoolValidator mempoolValidator;
         private readonly MempoolSchedulerLock mempoolLock;
@@ -23,11 +22,11 @@ namespace Stratis.Bitcoin.Features.MemoryPool
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
         }
 
-        protected override void OnNextCore(ChainedHeaderBlock chainedHeaderBlock)
+        protected override void OnNextCore(Block block)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(chainedHeaderBlock), chainedHeaderBlock);
+            this.logger.LogTrace("({0}:'{1}')", nameof(block), block.GetHash());
 
-            this.AddBackToMempoolAsync(chainedHeaderBlock.Block).ConfigureAwait(false).GetAwaiter().GetResult();
+            this.AddBackToMempoolAsync(block).ConfigureAwait(false).GetAwaiter().GetResult();
 
             this.logger.LogTrace("(-)");
         }
@@ -35,9 +34,10 @@ namespace Stratis.Bitcoin.Features.MemoryPool
         /// <summary>
         /// Adds Transactions in disconnected blocks back to the mempool.
         /// </summary>
-        /// <remarks>This could potentially be optimized. with an async queue.</remarks>
+        /// <remarks>This could potentially be optimised with an async queue.</remarks>
         /// <param name="block">The disconnected block containing the transactions.</param>
-        private async Task AddBackToMempoolAsync(Block block)
+        /// <returns></returns>
+        public async Task AddBackToMempoolAsync(Block block)
         {
             this.logger.LogTrace("({0}:'{1}')", nameof(block), block.GetHash());
 
@@ -49,9 +49,6 @@ namespace Stratis.Bitcoin.Features.MemoryPool
 
                 foreach (Transaction transaction in block.Transactions)
                 {
-                    if (transaction.IsProtocolTransaction())
-                        continue;
-
                     bool success = await this.mempoolValidator.AcceptToMemoryPool(state, transaction);
 
                     if (!success)
@@ -66,4 +63,4 @@ namespace Stratis.Bitcoin.Features.MemoryPool
             this.logger.LogTrace("(-)");
         }
     }
-}
+}   

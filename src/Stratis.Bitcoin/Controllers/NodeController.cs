@@ -9,7 +9,6 @@ using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Builder.Feature;
 using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Connection;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Controllers.Models;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Peer;
@@ -135,14 +134,14 @@ namespace Stratis.Bitcoin.Controllers
             foreach (INetworkPeer peer in this.connectionManager.ConnectedPeers)
             {
                 var connectionManagerBehavior = peer.Behavior<IConnectionManagerBehavior>();
-                var chainHeadersBehavior = peer.Behavior<ConsensusManagerBehavior>();
+                var chainHeadersBehavior = peer.Behavior<ChainHeadersBehavior>();
 
                 var connectedPeer = new ConnectedPeerModel
                 {
                     Version = peer.PeerVersion != null ? peer.PeerVersion.UserAgent : "[Unknown]",
                     RemoteSocketEndpoint = peer.RemoteSocketEndpoint.ToString(),
                     TipHeight = chainHeadersBehavior.ExpectedPeerTip != null ? chainHeadersBehavior.ExpectedPeerTip.Height : peer.PeerVersion?.StartHeight ?? -1,
-                    IsInbound = peer.Inbound
+                    IsInbound = connectionManagerBehavior.Inbound
                 };
 
                 if (connectedPeer.IsInbound)

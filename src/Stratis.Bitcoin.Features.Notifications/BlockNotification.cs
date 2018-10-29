@@ -2,17 +2,13 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Consensus;
+using Stratis.Bitcoin.BlockPulling;
 using Stratis.Bitcoin.Features.Notifications.Interfaces;
 using Stratis.Bitcoin.Signals;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Notifications
 {
-    // =================================================================
-    // TODO: This class is broken and the logic needs to be redesigned, this effects light wallet.
-    // =================================================================
-
     /// <summary>
     /// Class used to broadcast about new blocks.
     /// </summary>
@@ -29,7 +25,6 @@ namespace Stratis.Bitcoin.Features.Notifications
 
         private readonly ILogger logger;
 
-        private readonly IConsensusManager consensusManager;
         private readonly ISignals signals;
 
         private ChainedHeader tip;
@@ -37,20 +32,20 @@ namespace Stratis.Bitcoin.Features.Notifications
         public BlockNotification(
             ILoggerFactory loggerFactory,
             ConcurrentChain chain,
-            IConsensusManager consensusManager,
+            ILookaheadBlockPuller puller,
             ISignals signals,
             IAsyncLoopFactory asyncLoopFactory,
             INodeLifetime nodeLifetime)
         {
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
             Guard.NotNull(chain, nameof(chain));
-            Guard.NotNull(consensusManager, nameof(consensusManager));
+            Guard.NotNull(puller, nameof(puller));
             Guard.NotNull(signals, nameof(signals));
             Guard.NotNull(asyncLoopFactory, nameof(asyncLoopFactory));
             Guard.NotNull(nodeLifetime, nameof(nodeLifetime));
 
             this.Chain = chain;
-            this.consensusManager = consensusManager;
+            this.Puller = puller;
             this.signals = signals;
             this.asyncLoopFactory = asyncLoopFactory;
             this.nodeLifetime = nodeLifetime;
@@ -58,6 +53,8 @@ namespace Stratis.Bitcoin.Features.Notifications
         }
 
         public ConcurrentChain Chain { get; }
+
+        public ILookaheadBlockPuller Puller { get; }
 
         public virtual bool ReSync { get; private set; }
 
@@ -78,7 +75,7 @@ namespace Stratis.Bitcoin.Features.Notifications
                 {
                     // Sets the location of the puller to the block preceding the one we want to receive.
                     ChainedHeader previousBlock = this.Chain.GetBlock(startBlock.Height > 0 ? startBlock.Height - 1 : 0);
-                   // this.Puller.SetLocation(previousBlock);
+                    this.Puller.SetLocation(previousBlock);
                     this.tip = previousBlock;
 
                     this.logger.LogTrace("Puller location set to block: {0}.", previousBlock);
@@ -118,7 +115,7 @@ namespace Stratis.Bitcoin.Features.Notifications
 
             // Sets the location of the puller to the block preceding the one we want to receive.
             ChainedHeader previousBlock = this.Chain.GetBlock(startBlock.Height > 0 ? startBlock.Height - 1 : 0);
-           // this.Puller.SetLocation(previousBlock);
+            this.Puller.SetLocation(previousBlock);
             this.tip = previousBlock;
 
             this.logger.LogTrace("Puller location set to block: {0}.", previousBlock);
@@ -128,15 +125,15 @@ namespace Stratis.Bitcoin.Features.Notifications
             {
                 token.ThrowIfCancellationRequested();
 
-                //LookaheadResult lookaheadResult = this.Puller.NextBlock(token);
-                //if (lookaheadResult.Block != null)
-                //{
-                //    // Broadcast the block to the registered observers.
-                //    this.signals.SignalBlock(lookaheadResult.Block);
-                //    this.tip = this.Chain.GetBlock(lookaheadResult.Block.GetHash());
+                LookaheadResult lookaheadResult = this.Puller.NextBlock(token);
+                if (lookaheadResult.Block != null)
+                {
+                    // Broadcast the block to the registered observers.
+                    this.signals.SignalBlockConnected(lookaheadResult.Block);
+                    this.tip = this.Chain.GetBlock(lookaheadResult.Block.GetHash());
 
-                //    continue;
-                //}
+                    continue;
+                }
 
                 // In reorg we reset the puller to the fork.
                 // When a reorg happens the puller is pushed back and continues from the current fork.
@@ -145,7 +142,7 @@ namespace Stratis.Bitcoin.Features.Notifications
                     this.tip = this.tip.Previous;
 
                 // Set the puller to the fork location.
-                //this.Puller.SetLocation(this.tip);
+                this.Puller.SetLocation(this.tip);
             }
 
             this.ReSync = false;

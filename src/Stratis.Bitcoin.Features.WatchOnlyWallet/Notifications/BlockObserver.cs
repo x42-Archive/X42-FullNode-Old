@@ -1,13 +1,12 @@
 ﻿using NBitcoin;
-using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Signals;
 
 namespace Stratis.Bitcoin.Features.WatchOnlyWallet.Notifications
 {
     /// <summary>
-    /// Observer that receives notifications about the arrival of new <see cref="ChainedHeaderBlock"/>s.
+    /// Observer that receives notifications about the arrival of new <see cref="Block"/>s.
     /// </summary>
-    public class BlockObserver : SignalObserver<ChainedHeaderBlock>
+    public class BlockObserver : SignalObserver<Block>
     {
         private readonly IWatchOnlyWalletManager walletManager;
 
@@ -19,10 +18,10 @@ namespace Stratis.Bitcoin.Features.WatchOnlyWallet.Notifications
         /// <summary>
         /// Manages what happens when a new block is received.
         /// </summary>
-        /// <param name="chainedHeaderBlock">The new chained header block.</param>
-        protected override void OnNextCore(ChainedHeaderBlock chainedHeaderBlock)
+        /// <param name="block">The new block.</param>
+        protected override void OnNextCore(Block block)
         {
-            this.walletManager.ProcessBlock(chainedHeaderBlock.Block);
+            this.walletManager.ProcessBlock(block);
         }
     }
 }

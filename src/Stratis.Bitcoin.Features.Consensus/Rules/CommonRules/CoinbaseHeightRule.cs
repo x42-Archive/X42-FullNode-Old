@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base.Deployments;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
@@ -12,21 +11,16 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
     /// </summary>
     /// <remarks>
     /// More info here https://github.com/bitcoin/bips/blob/master/bip-0034.mediawiki
-    /// <para>
-    /// This is partial validation rule.
-    /// </para>
     /// </remarks>
-    public class CoinbaseHeightRule : PartialValidationConsensusRule
+    [PartialValidationRule(CanSkipValidation = true)]
+    public class CoinbaseHeightRule : ConsensusRule
     {
         /// <inheritdoc />
         /// <exception cref="ConsensusErrors.BadCoinbaseHeight">Thrown if coinbase doesn't start with serialized block height.</exception>
         public override Task RunAsync(RuleContext context)
         {
-            if (context.SkipValidation)
-                return Task.CompletedTask;
-
-            int newHeight = context.ValidationContext.ChainedHeaderToValidate.Height;
-            Block block = context.ValidationContext.BlockToValidate;
+            int newHeight = context.ConsensusTipHeight + 1;
+            Block block = context.ValidationContext.Block;
 
             var expect = new Script(Op.GetPushOp(newHeight));
             Script actual = block.Transactions[0].Inputs[0].ScriptSig;
@@ -61,7 +55,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
     }
 
     /// <summary>
-    /// With Bitcoin the BIP34 was activated at block 227,835 using the deployment flags,
+    /// With Bitcoin the BIP34 was activated at block 227,835 using the deployment flags, 
     /// this rule allows a chain to have BIP34 activated as a deployment rule.
     /// </summary>
     public class CoinbaseHeightActivationRule : CoinbaseHeightRule

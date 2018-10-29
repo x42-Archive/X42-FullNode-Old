@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base.Deployments;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
 using Stratis.Bitcoin.Utilities;
 
@@ -17,7 +16,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
     /// <exception cref="ConsensusErrors.BadTransactionNonFinal">Thrown if transaction's height or time is lower then provided by SequenceLock for this block.</exception>
     /// <exception cref="ConsensusErrors.BadBlockSigOps">Thrown if signature operation cost is greater then maximum block signature operation cost.</exception>
     /// <exception cref="ConsensusErrors.BadTransactionScriptError">Thrown if not all inputs are valid (no double spends, scripts & sigs, amounts).</exception>
-    public abstract class CoinViewRule : FullValidationConsensusRule
+    public abstract class CoinViewRule : ConsensusRule
     {
         /// <summary>Consensus options.</summary>
         public ConsensusOptions ConsensusOptions { get; private set; }
@@ -41,8 +40,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         {
             this.Logger.LogTrace("()");
 
-            Block block = context.ValidationContext.BlockToValidate;
-            ChainedHeader index = context.ValidationContext.ChainedHeaderToValidate;
+            Block block = context.ValidationContext.Block;
+            ChainedHeader index = context.ValidationContext.ChainedHeader;
             DeploymentFlags flags = context.Flags;
             UnspentOutputSet view = (context as UtxoRuleContext).UnspentOutputSet;
 
@@ -153,7 +152,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         {
             this.Logger.LogTrace("()");
 
-            ChainedHeader index = context.ValidationContext.ChainedHeaderToValidate;
+            ChainedHeader index = context.ValidationContext.ChainedHeader;
             UnspentOutputSet view = (context as UtxoRuleContext).UnspentOutputSet;
 
             view.Update(transaction, index.Height);

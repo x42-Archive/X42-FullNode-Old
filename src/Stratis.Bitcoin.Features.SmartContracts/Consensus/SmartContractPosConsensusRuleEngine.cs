@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NBitcoin;
-using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Base.Deployments;
+using Stratis.Bitcoin.BlockPulling;
 using Stratis.Bitcoin.Configuration.Settings;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
@@ -20,7 +20,7 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
     /// <summary>
     /// Extension of consensus rules that provide access to a PoS store.
     /// </summary>
-    public sealed class SmartContractPosConsensusRuleEngine : PosConsensusRuleEngine, ISmartContractCoinviewRule
+    public sealed class SmartContractPosConsensusRuleEngine : PosConsensusRules, ISmartContractCoinviewRule
     {
         public ISmartContractExecutorFactory ExecutorFactory { get; private set; }
         public IContractStateRoot OriginalStateRoot { get; private set; }
@@ -37,14 +37,13 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
             Network network,
             NodeDeployments nodeDeployments,
             IContractStateRoot originalStateRoot,
+            ILookaheadBlockPuller puller,
             IReceiptRepository receiptRepository,
             ISenderRetriever senderRetriever,
             IStakeChain stakeChain,
             IStakeValidator stakeValidator,
-            ICoinView utxoSet,
-            IChainState chainState,
-            IInvalidBlockHashStore invalidBlockHashStore)
-            : base(network, loggerFactory, dateTimeProvider, chain, nodeDeployments, consensusSettings, checkpoints, utxoSet, stakeChain, stakeValidator, chainState, invalidBlockHashStore)
+            ICoinView utxoSet)
+            : base(network, loggerFactory, dateTimeProvider, chain, nodeDeployments, consensusSettings, checkpoints, utxoSet, puller, stakeChain, stakeValidator)
         {
             this.ExecutorFactory = executorFactory;
             this.OriginalStateRoot = originalStateRoot;
@@ -53,9 +52,9 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Consensus
         }
 
         /// <inheritdoc />
-        public override RuleContext CreateRuleContext(ValidationContext validationContext)
+        public override RuleContext CreateRuleContext(ValidationContext validationContext, ChainedHeader consensusTip)
         {
-            return new PosRuleContext(validationContext, this.DateTimeProvider.GetTimeOffset());
+            return new PosRuleContext(validationContext, this.Network.Consensus, consensusTip, this.DateTimeProvider.GetTimeOffset());
         }
     }
 }

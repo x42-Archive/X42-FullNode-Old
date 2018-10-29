@@ -6,14 +6,15 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using NBitcoin.Crypto;
 using Stratis.Bitcoin.Base.Deployments;
-using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
-using Stratis.Bitcoin.P2P.Protocol.Payloads;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 {
-    /// <summary>A rule that validates witness commitments.</summary>
-    public class WitnessCommitmentsRule : PartialValidationConsensusRule
+    /// <summary>
+    /// A rule that validates witness commitments.
+    /// </summary>
+    [PartialValidationRule(CanSkipValidation = true)]
+    public class WitnessCommitmentsRule : ConsensusRule
     {
         /// <inheritdoc />
         /// <exception cref="ConsensusErrors.BadWitnessNonceSize">The witness nonce size is invalid.</exception>
@@ -21,11 +22,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
         /// <exception cref="ConsensusErrors.UnexpectedWitness">The block does not expect witness transactions but contains a witness transaction.</exception>
         public override Task RunAsync(RuleContext context)
         {
-            if (context.SkipValidation)
-                return Task.CompletedTask;
-
             DeploymentFlags deploymentFlags = context.Flags;
-            Block block = context.ValidationContext.BlockToValidate;
+            Block block = context.ValidationContext.Block;
 
             // Validation for witness commitments.
             // * We compute the witness hash (which is the hash including witnesses) of all the block's transactions, except the
@@ -49,9 +47,6 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
                     WitScript witness = block.Transactions[0].Inputs[0].WitScript;
                     if ((witness.PushCount != 1) || (witness.Pushes.First().Length != 32))
                     {
-                        // Witness information is missing, activating witness requirement for peers is required.
-                        context.ValidationContext.MissingServices = NetworkPeerServices.NODE_WITNESS;
-
                         this.Logger.LogTrace("(-)[BAD_WITNESS_NONCE_SIZE]");
                         ConsensusErrors.BadWitnessNonceSize.Throw();
                     }

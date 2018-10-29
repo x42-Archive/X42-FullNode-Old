@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NBitcoin;
-using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Tests.Common;
 using Xunit;
 
@@ -21,12 +19,11 @@ namespace Stratis.Bitcoin.Features.MemoryPool.Tests
             var subject = new BlocksDisconnectedSignaled(mempoolValidatorMock.Object, new MempoolSchedulerLock(), loggerFactoryMock.Object);
 
             var block = new Block();
-            var genesisChainedHeaderBlock = new ChainedHeaderBlock(block, ChainedHeadersHelper.CreateGenesisChainedHeader());
             var transaction1 = new Transaction();
             var transaction2 = new Transaction();
             block.Transactions = new List<Transaction> { transaction1, transaction2 };
 
-            subject.OnNext(genesisChainedHeaderBlock);
+            subject.OnNext(block);
 
             mempoolValidatorMock.Verify(x => x.AcceptToMemoryPool(It.IsAny<MempoolValidationState>(), transaction1));
             mempoolValidatorMock.Verify(x => x.AcceptToMemoryPool(It.IsAny<MempoolValidationState>(), transaction2));

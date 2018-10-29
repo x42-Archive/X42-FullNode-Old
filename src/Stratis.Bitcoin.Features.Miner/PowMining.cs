@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Consensus;
+using Stratis.Bitcoin.Features.Consensus;
+using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.MemoryPool.Interfaces;
 using Stratis.Bitcoin.Features.Miner.Interfaces;
 using Stratis.Bitcoin.Mining;
-using Stratis.Bitcoin.Primitives;
 using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Miner
@@ -40,7 +41,7 @@ namespace Stratis.Bitcoin.Features.Miner
         private readonly ConcurrentChain chain;
 
         /// <summary>Manager of the longest fully validated chain of blocks.</summary>
-        private readonly IConsensusManager consensusManager;
+        private readonly IConsensusLoop consensusLoop;
 
         /// <summary>Provider of time functions.</summary>
         private readonly IDateTimeProvider dateTimeProvider;
@@ -81,7 +82,7 @@ namespace Stratis.Bitcoin.Features.Miner
         public PowMining(
             IAsyncLoopFactory asyncLoopFactory,
             IBlockProvider blockProvider,
-            IConsensusManager consensusManager,
+            IConsensusLoop consensusLoop,
             ConcurrentChain chain,
             IDateTimeProvider dateTimeProvider,
             ITxMempool mempool,
@@ -93,7 +94,7 @@ namespace Stratis.Bitcoin.Features.Miner
             this.asyncLoopFactory = asyncLoopFactory;
             this.blockProvider = blockProvider;
             this.chain = chain;
-            this.consensusManager = consensusManager;
+            this.consensusLoop = consensusLoop;
             this.dateTimeProvider = dateTimeProvider;
             this.loggerFactory = loggerFactory;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
@@ -177,6 +178,9 @@ namespace Stratis.Bitcoin.Features.Miner
                 if (!this.ValidateAndConnectBlock(context))
                     break;
 
+                if (!this.CheckValidationContextPreviousTip(context))
+                    continue;
+
                 this.OnBlockMined(context);
             }
 
@@ -190,7 +194,7 @@ namespace Stratis.Bitcoin.Features.Miner
         {
             this.miningCancellationTokenSource.Token.ThrowIfCancellationRequested();
 
-            context.ChainTip = this.consensusManager.Tip;
+            context.ChainTip = this.consensusLoop.Tip;
             if (this.chain.Tip != context.ChainTip)
             {
                 Task.Delay(TimeSpan.FromMinutes(1), this.nodeLifetime.ApplicationStopping).GetAwaiter().GetResult();
@@ -203,7 +207,7 @@ namespace Stratis.Bitcoin.Features.Miner
         /// <summary>
         /// Creates a proof of work or proof of stake block depending on the network the node is running on.
         /// <para>
-        /// If the node is on a POS network, make sure the POS consensus rules are valid. This is required for
+        /// If the node is on a POS network, make sure the POS consensus rules are valid. This is required for 
         /// generation of blocks inside tests, where it is possible to generate multiple blocks within one second.
         /// </para>
         /// </summary>
@@ -265,24 +269,35 @@ namespace Stratis.Bitcoin.Features.Miner
         /// </summary>
         private bool ValidateAndConnectBlock(MineBlockContext context)
         {
-            this.logger.LogTrace("()");
-            ChainedHeader chainedHeader = this.consensusManager.BlockMinedAsync(context.BlockTemplate.Block).GetAwaiter().GetResult();
+            context.ValidationContext = new ValidationContext { Block = context.BlockTemplate.Block };
+            this.consensusLoop.AcceptBlockAsync(context.ValidationContext).GetAwaiter().GetResult();
 
-            if (chainedHeader == null)
+            if (context.ValidationContext.ChainedHeader == null)
             {
-                this.logger.LogTrace("(-)[BLOCK_VALIDATION_ERROR]:false");
+                this.logger.LogTrace("(-)[REORG-2]");
                 return false;
             }
 
-            context.ChainedHeaderBlock = new ChainedHeaderBlock(context.BlockTemplate.Block, chainedHeader);
+            if (context.ValidationContext.Error != null && context.ValidationContext.Error != ConsensusErrors.InvalidPrevTip)
+            {
+                this.logger.LogTrace("(-)[ACCEPT_BLOCK_ERROR]");
+                return false;
+            }
 
-            this.logger.LogTrace("(-):true");
+            return true;
+        }
+
+        private bool CheckValidationContextPreviousTip(MineBlockContext context)
+        {
+            if (context.ValidationContext.Error != null)
+                if (context.ValidationContext.Error == ConsensusErrors.InvalidPrevTip)
+                    return false;
             return true;
         }
 
         private void OnBlockMined(MineBlockContext context)
         {
-            this.logger.LogInformation("Mined new {0} block: '{1}'.", BlockStake.IsProofOfStake(context.ChainedHeaderBlock.Block) ? "POS" : "POW", context.ChainedHeaderBlock.ChainedHeader);
+            this.logger.LogInformation("Mined new {0} block: '{1}'.", BlockStake.IsProofOfStake(context.ValidationContext.Block) ? "POS" : "POW", context.ValidationContext.ChainedHeader);
 
             context.CurrentHeight++;
 
@@ -319,13 +334,13 @@ namespace Stratis.Bitcoin.Features.Miner
             public List<uint256> Blocks = new List<uint256>();
             public BlockTemplate BlockTemplate { get; set; }
             public ulong ChainHeight { get; set; }
-            public ChainedHeaderBlock ChainedHeaderBlock { get; internal set; }
             public ulong CurrentHeight { get; set; }
             public ChainedHeader ChainTip { get; set; }
             public int ExtraNonce { get; set; }
             public ulong MaxTries { get; set; }
             public bool MiningCanContinue { get { return this.CurrentHeight < this.ChainHeight + this.amountOfBlocksToMine; } }
             public readonly ReserveScript ReserveScript;
+            public ValidationContext ValidationContext { get; set; }
 
             public MineBlockContext(ulong amountOfBlocksToMine, ulong chainHeight, ulong maxTries, ReserveScript reserveScript)
             {

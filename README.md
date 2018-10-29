@@ -76,17 +76,9 @@ dotnet build
 
 ```
 
-To run on the Bitcoin network:
-```
-cd Stratis.BitcoinD
-dotnet run
-```  
+To run on the Bitcoin network: ``` x42.BitcoinD\dotnet run ```  
+To run on the x42 network: ``` x42.x42D\dotnet run ```  
 
-To run on the Stratis network:
-```
-cd Stratis.StratisD
-dotnet run
-```  
 Getting Started Guide
 -----------
 More details on getting started are available [here](https://github.com/x42project/x42BitcoinFullNode/blob/master/Documentation/getting-started.md)
@@ -117,3 +109,4 @@ To skip a build, for example if you've made very minor changes, include the text
 
 If you want get the :sparkles: latest :sparkles: (and unstable :bomb:) version of the nuget packages here: 
 * [x42.Bitcoin](https://ci.appveyor.com/api/projects/x42/x42bitcoinfullnode/artifacts/nuget/x42.Bitcoin.1.0.7-alpha.nupkg?job=Configuration%3A%20Release)
+
