@@ -81,7 +81,7 @@ To run on the x42 network: ``` x42.x42D\dotnet run ```
 
 Getting Started Guide
 -----------
-More details on getting started are available [here](https://github.com/x42project/x42BitcoinFullNode/blob/master/Documentation/getting-started.md)
+More details on getting started are available [here](https://github.com/x42protocol/X42-FullNode/blob/master/Documentation/getting-started.md)
 
 Development
 -----------
