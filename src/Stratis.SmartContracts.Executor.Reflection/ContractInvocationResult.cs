@@ -1,4 +1,5 @@
 ﻿using System;
+using Stratis.SmartContracts.Core;
 
 namespace Stratis.SmartContracts.Executor.Reflection
 {
@@ -6,7 +7,7 @@ namespace Stratis.SmartContracts.Executor.Reflection
     {
         public bool IsSuccess { get; }
         public ContractInvocationErrorType InvocationErrorType { get; }
-        public Exception Exception { get; }
+        public ContractErrorMessage ErrorMessage { get; }
         public object Return { get; }
 
         private ContractInvocationResult(object result)
@@ -15,17 +16,11 @@ namespace Stratis.SmartContracts.Executor.Reflection
             this.Return = result;
         }
 
-        private ContractInvocationResult(ContractInvocationErrorType errorType)
+        private ContractInvocationResult(ContractInvocationErrorType errorType, ContractErrorMessage errorMessage)
         {
             this.IsSuccess = false;
             this.InvocationErrorType = errorType;
-        }
-
-        private ContractInvocationResult(ContractInvocationErrorType errorType, Exception exception)
-        {
-            this.IsSuccess = false;
-            this.InvocationErrorType = errorType;
-            this.Exception = exception;
+            this.ErrorMessage = errorMessage;
         }
 
         public static ContractInvocationResult Success(object result)
@@ -33,14 +28,40 @@ namespace Stratis.SmartContracts.Executor.Reflection
             return new ContractInvocationResult(result);
         }
 
+        /// <summary>
+        /// Return invocation failure for cases outside the execution of contract code.
+        /// </summary>
         public static ContractInvocationResult Failure(ContractInvocationErrorType errorType)
         {
-            return new ContractInvocationResult(errorType);
+            string errorMessage = GetErrorMessage(errorType);
+            return new ContractInvocationResult(errorType, new ContractErrorMessage(errorMessage));
         }
 
-        public static ContractInvocationResult Failure(ContractInvocationErrorType errorType, Exception exception)
+        /// <summary>
+        /// Return invocation failure for cases related to execution inside contract code.
+        /// </summary>
+        public static ContractInvocationResult ExecutionFailure(ContractInvocationErrorType errorType, Exception exception)
         {
-            return new ContractInvocationResult(errorType);
+            return new ContractInvocationResult(errorType, new ContractErrorMessage(exception.ToString()));
+        }
+
+        private static string GetErrorMessage(ContractInvocationErrorType errorType)
+        {
+            switch (errorType)
+            {
+                case ContractInvocationErrorType.MethodDoesNotExist:
+                    return ContractInvocationErrors.MethodDoesNotExist;
+                case ContractInvocationErrorType.MethodIsConstructor:
+                    return ContractInvocationErrors.MethodIsConstructor;
+                case ContractInvocationErrorType.MethodIsPrivate:
+                    return ContractInvocationErrors.MethodIsPrivate;
+                case ContractInvocationErrorType.ParameterCountIncorrect:
+                    return ContractInvocationErrors.ParameterCountIncorrect;
+                case ContractInvocationErrorType.ParameterTypesDontMatch:
+                    return ContractInvocationErrors.ParameterTypesDontMatch;
+                default:
+                    throw new NotSupportedException($"Should use either {nameof(Success)} or {nameof(ExecutionFailure)} for this ContractInvocationErrorType.");
+            }
         }
     }
 }

@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base;
+using Stratis.Bitcoin.Controllers.Models;
 using Stratis.Bitcoin.Features.BlockStore.Models;
+using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Utilities;
 using Stratis.Bitcoin.Utilities.JsonErrors;
 using Stratis.Bitcoin.Utilities.ModelStateErrors;
@@ -18,8 +20,8 @@ namespace Stratis.Bitcoin.Features.BlockStore.Controllers
     [Route("api/[controller]")]
     public class BlockStoreController : Controller
     {
-        /// <summary>An interface for getting blocks asynchronously from the blockstore cache.</summary>
-        private readonly IBlockStoreCache blockStoreCache;
+        /// <see cref="IBlockStore"/>
+        private readonly IBlockStore blockStore;
 
         /// <summary>Instance logger.</summary>
         private readonly ILogger logger;
@@ -28,23 +30,29 @@ namespace Stratis.Bitcoin.Features.BlockStore.Controllers
         private readonly IChainState chainState;
 
         /// <summary>
+        /// The chain.
+        /// </summary>
+        private readonly ChainBase chain;
+
+        /// <summary>
         /// Current network for the active controller instance.
         /// </summary>
         private readonly Network network;
 
         public BlockStoreController(Network network,
             ILoggerFactory loggerFactory,
-            IBlockStoreCache blockStoreCache,
-            IChainState chainState)
+            IBlockStore blockStore,
+            IChainState chainState,
+            ConcurrentChain chain)
         {
             Guard.NotNull(network, nameof(network));
             Guard.NotNull(loggerFactory, nameof(loggerFactory));
-            Guard.NotNull(blockStoreCache, nameof(blockStoreCache));
             Guard.NotNull(chainState, nameof(chainState));
 
             this.network = network;
-            this.blockStoreCache = blockStoreCache;
+            this.blockStore = blockStore;
             this.chainState = chainState;
+            this.chain = chain;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
         }
 
@@ -62,11 +70,9 @@ namespace Stratis.Bitcoin.Features.BlockStore.Controllers
                 return ModelStateErrors.BuildErrorResponse(this.ModelState);
             }
 
-            this.logger.LogTrace("({0}:'{1}')", nameof(SearchByHashRequest.Hash), query.Hash);
-
             try
             {
-                Block block = await this.blockStoreCache.GetBlockAsync(uint256.Parse(query.Hash)).ConfigureAwait(false);
+                Block block = await this.blockStore.GetBlockAsync(uint256.Parse(query.Hash)).ConfigureAwait(false);
 
                 if (block == null)
                 {
@@ -79,8 +85,8 @@ namespace Stratis.Bitcoin.Features.BlockStore.Controllers
                 }
 
                 return query.ShowTransactionDetails
-                    ? this.Json(new BlockTransactionDetailsModel(block, this.network))
-                    : this.Json(new BlockModel(block));
+                    ? this.Json(new BlockTransactionDetailsModel(block, this.network, this.chain))
+                    : this.Json(new BlockModel(block, this.chain));
             }
             catch (Exception e)
             {

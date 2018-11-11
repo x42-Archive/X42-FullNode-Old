@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NBitcoin;
+using NBitcoin.Crypto;
 using NBitcoin.Rules;
+using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Base.Deployments;
 using Stratis.Bitcoin.BlockPulling;
+using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Configuration.Settings;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
@@ -26,7 +30,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
         protected NodeDeployments nodeDeployments;
         protected ConsensusSettings consensusSettings;
         protected Mock<ICheckpoints> checkpoints;
-        protected List<IConsensusRule> ruleRegistrations;
+        protected List<IConsensusRuleBase> rules;
+        protected Mock<IChainState> chainState;
         protected Mock<IRuleRegistration> ruleRegistration;
         protected RuleContext ruleContext;
         protected Transaction lastAddedTransaction;
@@ -40,23 +45,19 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
             this.loggerFactory.Setup(l => l.CreateLogger(It.IsAny<string>())).Returns(new Mock<ILogger>().Object);
             this.dateTimeProvider = new Mock<IDateTimeProvider>();
 
-            this.concurrentChain = new ConcurrentChain(this.network);
-            this.nodeDeployments = new NodeDeployments(this.network, this.concurrentChain);
-            this.consensusSettings = new ConsensusSettings();
+            this.chainState = new Mock<IChainState>();
             this.checkpoints = new Mock<ICheckpoints>();
+            this.concurrentChain = new ConcurrentChain(this.network);
+            this.consensusSettings = new ConsensusSettings(NodeSettings.Default(this.network));
+            this.nodeDeployments = new NodeDeployments(this.network, this.concurrentChain);
 
-            this.ruleRegistrations = new List<IConsensusRule>();
+            this.rules = new List<IConsensusRuleBase>();
             this.ruleRegistration = new Mock<IRuleRegistration>();
-            this.ruleRegistration.Setup(r => r.GetRules()).Returns(() => { return this.ruleRegistrations; });
 
             if (network.Consensus.IsProofOfStake)
-            {
-                this.ruleContext = new PosRuleContext(new ValidationContext(), this.network.Consensus, this.concurrentChain.Tip, this.dateTimeProvider.Object.GetTimeOffset());
-            }
+                this.ruleContext = new PosRuleContext(new ValidationContext(), this.dateTimeProvider.Object.GetTimeOffset());
             else
-            {
-                this.ruleContext = new PowRuleContext(new ValidationContext(), this.network.Consensus, this.concurrentChain.Tip, this.dateTimeProvider.Object.GetTimeOffset());
-            }
+                this.ruleContext = new PowRuleContext(new ValidationContext(), this.dateTimeProvider.Object.GetTimeOffset());
         }
 
         protected void AddBlocksToChain(ConcurrentChain chain, int blockAmount)
@@ -88,28 +89,30 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
     {
         protected Mock<IStakeChain> stakeChain;
         protected Mock<IStakeValidator> stakeValidator;
-        protected Mock<ILookaheadBlockPuller> lookaheadBlockPuller;
+        protected Mock<IBlockPuller> lookaheadBlockPuller;
         protected Mock<ICoinView> coinView;
 
         public PosConsensusRuleUnitTestBase() : base(KnownNetworks.StratisTest)
         {
             this.stakeChain = new Mock<IStakeChain>();
             this.stakeValidator = new Mock<IStakeValidator>();
-            this.lookaheadBlockPuller = new Mock<ILookaheadBlockPuller>();
+            this.lookaheadBlockPuller = new Mock<IBlockPuller>();
             this.coinView = new Mock<ICoinView>();
         }
 
-        protected T CreateRule<T>() where T : ConsensusRule, new()
+        protected T CreateRule<T>() where T : ConsensusRuleBase, new()
         {
             return new T()
             {
                 Logger = this.logger.Object,
-                Parent = new TestPosConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain, this.nodeDeployments, this.consensusSettings, this.checkpoints.Object, this.coinView.Object, this.lookaheadBlockPuller.Object, this.stakeChain.Object, this.stakeValidator.Object)
+                Parent = new TestPosConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain, this.nodeDeployments,
+                    this.consensusSettings, this.checkpoints.Object, this.coinView.Object, this.stakeChain.Object, this.stakeValidator.Object, this.chainState.Object,
+                    new InvalidBlockHashStore(new DateTimeProvider()), new NodeStats(this.dateTimeProvider.Object))
             };
         }
     }
 
-    public class ConsensusRuleUnitTestBase<T> where T : ConsensusRules
+    public class ConsensusRuleUnitTestBase<T> where T : ConsensusRuleEngine
     {
         protected Network network;
         protected Mock<ILoggerFactory> loggerFactory;
@@ -118,7 +121,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
         protected NodeDeployments nodeDeployments;
         protected ConsensusSettings consensusSettings;
         protected Mock<ICheckpoints> checkpoints;
-        protected Mock<IRuleRegistration> ruleRegistration;
+        protected Mock<IChainState> chainState;
         protected T consensusRules;
         protected RuleContext ruleContext;
 
@@ -126,22 +129,22 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
         {
             this.network = network;
             this.loggerFactory = new Mock<ILoggerFactory>();
-            this.loggerFactory.Setup(l => l.CreateLogger(It.IsAny<string>()))
-                .Returns(new Mock<ILogger>().Object);
-            this.dateTimeProvider = new Mock<IDateTimeProvider>();
+            this.loggerFactory.Setup(l => l.CreateLogger(It.IsAny<string>())).Returns(new Mock<ILogger>().Object);
 
-            this.concurrentChain = new ConcurrentChain(this.network);
-            this.nodeDeployments = new NodeDeployments(this.network, this.concurrentChain);
-            this.consensusSettings = new ConsensusSettings();
+            this.chainState = new Mock<IChainState>();
             this.checkpoints = new Mock<ICheckpoints>();
+            this.concurrentChain = new ConcurrentChain(this.network);
+            this.consensusSettings = new ConsensusSettings(NodeSettings.Default(this.network));
+            this.dateTimeProvider = new Mock<IDateTimeProvider>();
+            this.nodeDeployments = new NodeDeployments(this.network, this.concurrentChain);
 
             if (network.Consensus.IsProofOfStake)
             {
-                this.ruleContext = new PosRuleContext(new ValidationContext(), this.network.Consensus, this.concurrentChain.Tip, this.dateTimeProvider.Object.GetTimeOffset());
+                this.ruleContext = new PosRuleContext(new ValidationContext(), this.dateTimeProvider.Object.GetTimeOffset());
             }
             else
             {
-                this.ruleContext = new PowRuleContext(new ValidationContext(), this.network.Consensus, this.concurrentChain.Tip, this.dateTimeProvider.Object.GetTimeOffset());
+                this.ruleContext = new PowRuleContext(new ValidationContext(), this.dateTimeProvider.Object.GetTimeOffset());
             }
         }
 
@@ -196,7 +199,8 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
 
         public override TestConsensusRules InitializeConsensusRules()
         {
-            return new TestConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain, this.nodeDeployments, this.consensusSettings, this.checkpoints.Object);
+            return new TestConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain, this.nodeDeployments,
+                this.consensusSettings, this.checkpoints.Object, this.chainState.Object, new InvalidBlockHashStore(this.dateTimeProvider.Object), new NodeStats(this.dateTimeProvider.Object));
         }
     }
 
@@ -204,21 +208,115 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules
     {
         protected Mock<IStakeChain> stakeChain;
         protected Mock<IStakeValidator> stakeValidator;
-        protected Mock<ILookaheadBlockPuller> lookaheadBlockPuller;
+        protected Mock<IBlockPuller> lookaheadBlockPuller;
         protected Mock<ICoinView> coinView;
 
         public TestPosConsensusRulesUnitTestBase() : base(KnownNetworks.StratisTest)
         {
             this.stakeChain = new Mock<IStakeChain>();
             this.stakeValidator = new Mock<IStakeValidator>();
-            this.lookaheadBlockPuller = new Mock<ILookaheadBlockPuller>();
+            this.lookaheadBlockPuller = new Mock<IBlockPuller>();
             this.coinView = new Mock<ICoinView>();
             this.consensusRules = InitializeConsensusRules();
         }
 
         public override TestPosConsensusRules InitializeConsensusRules()
         {
-            return new TestPosConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain, this.nodeDeployments, this.consensusSettings, this.checkpoints.Object, this.coinView.Object, this.lookaheadBlockPuller.Object, this.stakeChain.Object, this.stakeValidator.Object);
+            return new TestPosConsensusRules(this.network, this.loggerFactory.Object, this.dateTimeProvider.Object, this.concurrentChain,
+                this.nodeDeployments, this.consensusSettings, this.checkpoints.Object, this.coinView.Object, this.stakeChain.Object,
+                this.stakeValidator.Object, this.chainState.Object, new InvalidBlockHashStore(this.dateTimeProvider.Object), new NodeStats(this.dateTimeProvider.Object));
+        }
+    }
+
+    public sealed class ProvenBlockHeaderBuilder
+    {
+        private readonly ProvenBlockHeader provenBlockHeader;
+
+        public ProvenBlockHeaderBuilder(PosBlock posBlock, Network network)
+        {
+            this.provenBlockHeader = ((PosConsensusFactory)network.Consensus.ConsensusFactory).CreateProvenBlockHeader(posBlock);
+        }
+
+        internal ProvenBlockHeader Build()
+        {
+            return this.provenBlockHeader;
+        }
+    }
+
+    public sealed class PosBlockBuilder
+    {
+        private readonly PosBlock posBlock;
+
+        public PosBlockBuilder(Network network, Key privateKey = null)
+        {
+            if (privateKey == null)
+            {
+                var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+                privateKey = mnemonic.DeriveExtKey().PrivateKey;
+            }
+
+            // Create coinstake Tx.
+            Transaction previousTx = network.CreateTransaction();
+            previousTx.AddOutput(new TxOut());
+            Transaction coinstakeTx = network.CreateTransaction();
+            coinstakeTx.AddOutput(new TxOut(0, Script.Empty));
+            coinstakeTx.AddOutput(new TxOut(50, new Script()));
+            coinstakeTx.AddInput(previousTx, 0);
+
+            // Create coinbase Tx.
+            Transaction coinBaseTx = network.CreateTransaction();
+            coinBaseTx.AddOutput(100, new Script());
+            coinBaseTx.AddInput(new TxIn());
+
+            var block = (PosBlock)network.CreateBlock();
+            block.AddTransaction(coinBaseTx);
+            block.AddTransaction(coinstakeTx);
+
+            ECDSASignature signature = privateKey.Sign(block.Header.GetHash());
+            block.BlockSignature = new BlockSignature { Signature = signature.ToDER() };
+
+            this.posBlock = block;
+        }
+
+        internal PosBlockBuilder WithLargeMerkleProof(int numberOfHashes = 50_000)
+        {
+            var hashes = new List<uint256>();
+            for (int i = 0; i < numberOfHashes; i++)
+            {
+                var hash = new uint256(RandomUtils.GetBytes(32));
+                hashes.Add(hash);
+                this.posBlock.Transactions.Add(new Transaction { Time = (uint)i });
+            }
+
+            this.posBlock.UpdateMerkleRoot();
+            return this;
+        }
+
+        internal PosBlockBuilder WithLargeCoinstake(int numberOfTransactions = 100_000)
+        {
+            var rogueCoinstakeTransaction = new Transaction();
+            for (int i = 0; i < numberOfTransactions; i++)
+            {
+                rogueCoinstakeTransaction.Inputs.Add(new TxIn(new Script(RandomUtils.GetBytes(100))));
+            }
+
+            // Replace existing coinstake with a rogue one.
+            this.posBlock.Transactions[1] = rogueCoinstakeTransaction;
+
+            return this;
+        }
+
+        internal PosBlockBuilder WithLargeSignature(int numberOfBytes = 100)
+        {
+            // Replace existing signature with an invalid one.
+            this.posBlock.BlockSignature = new BlockSignature { Signature = RandomUtils.GetBytes(numberOfBytes) };
+
+            return this;
+        }
+
+        internal PosBlock Build()
+        {
+            return this.posBlock;
         }
     }
 }

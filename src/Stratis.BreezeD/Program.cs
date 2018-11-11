@@ -31,15 +31,14 @@ namespace Stratis.BreezeD
 
                 if (isStratis)
                 {
-                    Network network = isTestNet ? NetworkRegistration.Register(new StratisTest()) : NetworkRegistration.Register(new StratisMain());
                     if (isTestNet)
                         args = args.Append("-addnode=51.141.28.47").ToArray(); // TODO: fix this temp hack
 
-                    nodeSettings = new NodeSettings(network, ProtocolVersion.ALT_PROTOCOL_VERSION, agent, args:args);
+                    nodeSettings = new NodeSettings(networksSelector:Networks.Stratis, protocolVersion: ProtocolVersion.ALT_PROTOCOL_VERSION, agent: agent, args:args);
                 }
                 else
                 {
-                    nodeSettings = new NodeSettings(agent: agent, args: args);
+                    nodeSettings = new NodeSettings(networksSelector:Networks.Bitcoin, agent: agent, args: args);
                 }
 
                 IFullNodeBuilder fullNodeBuilder = new FullNodeBuilder()
@@ -57,7 +56,7 @@ namespace Stratis.BreezeD
             }
             catch (Exception ex)
             {
-                Console.WriteLine("There was a problem initializing the node. Details: '{0}'", ex.Message);
+                Console.WriteLine("There was a problem initializing the node. Details: '{0}'", ex.ToString());
             }
         }
     }

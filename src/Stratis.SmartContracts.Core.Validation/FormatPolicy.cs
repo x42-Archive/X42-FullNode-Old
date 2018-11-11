@@ -27,6 +27,7 @@ namespace Stratis.SmartContracts.Core.Validation
 
         public static ValidationPolicy Default = new ValidationPolicy()
             .ModuleDefValidator(new AssemblyReferenceValidator(AllowedAssemblies))
+            .ModuleDefValidator(new ContractToDeployValidator())
             .TypeDefValidator(new StaticConstructorValidator(), NestedTypePolicy.Ignore)
             .TypeDefValidator(new NamespaceValidator())
             .TypeDefValidator(new SingleConstructorValidator(), NestedTypePolicy.Ignore)
@@ -37,6 +38,8 @@ namespace Stratis.SmartContracts.Core.Validation
             .NestedTypeDefValidator(new TypeHasNestedTypesValidator())
             .NestedTypeDefValidator(new NestedTypesAreValueTypesValidator())
             .MethodDefValidator(new TryCatchValidator())
-            .MethodDefValidator(new MethodParamValidator());
-    }
+            .MethodDefValidator(new MethodParamValidator())
+            .InstructionValidator(new MultiDimensionalArrayValidator())
+            .InstructionValidator(new NewObjValidator());
+    }   
 }

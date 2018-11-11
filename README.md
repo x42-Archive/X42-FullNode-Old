@@ -20,10 +20,12 @@ A blockchain for entrepreneurs
 x42 is an implementation of the Bitcoin protocol in C# on the [.NET Core](https://dotnet.github.io/) platform.  
 The node can run on the Bitcoin and x42 networks.  
 x42 Bitcoin is based on the [NBitcoin](https://github.com/MetacoSA/NBitcoin) project.  
- 
+
+For Proof of Stake support on the x42 token the node is using [NStratis](https://github.com/stratisproject/NStratis) which is a POS implementation of NBitcoin.  
 
 [.NET Core](https://dotnet.github.io/) is an open source cross platform framework and enables the development of applications and services on Windows, macOS and Linux.  
-Join our community on [discord](https://discord.gg/tdN4ue6).  
+
+Join our community on [discord](https://discord.gg/bmYUmjr).
 
 The design
 ----------
@@ -71,17 +73,25 @@ Our full node is currently in alpha.
 git clone https://github.com/x42protocol/X42-FullNode.git
 cd X42-FullNode\src
 
-dotnet restore
 dotnet build
 
 ```
 
-To run on the Bitcoin network: ``` x42.BitcoinD\dotnet run ```  
-To run on the x42 network: ``` x42.x42D\dotnet run ```  
+To run on the Bitcoin network:
+```
+cd Stratis.BitcoinD
+dotnet run
+```  
+
+To run on the x42 network:
+```
+cd x42.x42D
+dotnet run
+```  
 
 Getting Started Guide
 -----------
-More details on getting started are available [here](https://github.com/x42project/x42BitcoinFullNode/blob/master/Documentation/getting-started.md)
+More details on getting started are available [here](https://github.com/x42protocol/X42-FullNode/blob/master/Documentation/getting-started.md)
 
 Development
 -----------
@@ -93,7 +103,7 @@ Check this guides for more info:
 * [Wiki Page](https://x42platform.atlassian.net/wiki/spaces/WIKI/overview)
 
 There is a lot to do and we welcome contributers developers and testers who want to get some Blockchain experience.
-You can find tasks at the issues/projects or visit our [C# dev](URL) discord channel.
+You can find tasks at the issues/projects or visit us on [discord](https://discord.gg/bmYUmjr).
 
 Testing
 -------

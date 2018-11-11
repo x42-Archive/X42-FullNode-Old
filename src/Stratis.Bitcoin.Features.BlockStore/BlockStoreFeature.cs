@@ -1,14 +1,15 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Builder;
 using Stratis.Bitcoin.Builder.Feature;
-using Stratis.Bitcoin.Configuration;
 using Stratis.Bitcoin.Configuration.Logging;
 using Stratis.Bitcoin.Connection;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Features.BlockStore.Controllers;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.P2P.Protocol.Payloads;
@@ -18,27 +19,16 @@ using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.BlockStore
 {
-    public class BlockStoreFeature : FullNodeFeature, INodeStats, IFeatureStats
+    public class BlockStoreFeature : FullNodeFeature
     {
+        private readonly Network network;
         private readonly ConcurrentChain chain;
 
         private readonly Signals.Signals signals;
 
-        private readonly IBlockRepository blockRepository;
-
-        private readonly IBlockStoreCache blockStoreCache;
-
-        private readonly BlockStoreQueue blockStoreQueue;
-
-        private readonly BlockStoreManager blockStoreManager;
-
         private readonly BlockStoreSignaled blockStoreSignaled;
 
-        private readonly INodeLifetime nodeLifetime;
-
         private readonly IConnectionManager connectionManager;
-
-        private readonly NodeSettings nodeSettings;
 
         private readonly StoreSettings storeSettings;
 
@@ -50,110 +40,77 @@ namespace Stratis.Bitcoin.Features.BlockStore
         /// <summary>Factory for creating loggers.</summary>
         private readonly ILoggerFactory loggerFactory;
 
-        private readonly string name;
+        private readonly IBlockStoreQueue blockStoreQueue;
+
+        private readonly IConsensusManager consensusManager;
 
         public BlockStoreFeature(
+            Network network,
             ConcurrentChain chain,
             IConnectionManager connectionManager,
             Signals.Signals signals,
-            IBlockRepository blockRepository,
-            IBlockStoreCache blockStoreCache,
-            BlockStoreQueue blockStoreQueue,
-            BlockStoreManager blockStoreManager,
             BlockStoreSignaled blockStoreSignaled,
-            INodeLifetime nodeLifetime,
-            NodeSettings nodeSettings,
             ILoggerFactory loggerFactory,
             StoreSettings storeSettings,
             IChainState chainState,
-            string name = "BlockStore")
+            IBlockStoreQueue blockStoreQueue,
+            INodeStats nodeStats,
+            IConsensusManager consensusManager)
         {
-            this.name = name;
+            this.network = network;
             this.chain = chain;
-            this.signals = signals;
-            this.blockRepository = blockRepository;
-            this.blockStoreCache = blockStoreCache;
             this.blockStoreQueue = blockStoreQueue;
-            this.blockStoreManager = blockStoreManager;
+            this.signals = signals;
             this.blockStoreSignaled = blockStoreSignaled;
-            this.nodeLifetime = nodeLifetime;
             this.connectionManager = connectionManager;
-            this.nodeSettings = nodeSettings;
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.loggerFactory = loggerFactory;
             this.storeSettings = storeSettings;
             this.chainState = chainState;
+            this.consensusManager = consensusManager;
+
+            nodeStats.RegisterStats(this.AddInlineStats, StatsType.Inline, 900);
         }
 
-        public virtual BlockStoreBehavior BlockStoreBehaviorFactory()
-        {
-            return new BlockStoreBehavior(this.chain, this.blockRepository, this.blockStoreCache, this.loggerFactory);
-        }
-
-        /// <inheritdoc />
-        public void AddNodeStats(StringBuilder benchLogs)
+        private void AddInlineStats(StringBuilder log)
         {
             ChainedHeader highestBlock = this.chainState.BlockStoreTip;
 
             if (highestBlock != null)
             {
-                benchLogs.AppendLine($"{this.name}.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) +
-                                     highestBlock.Height.ToString().PadRight(8) +
-                                     $" {this.name}.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) +
-                                     highestBlock.HashBlock);
+                string logString = $"BlockStore.Height: ".PadRight(LoggingConfiguration.ColumnLength + 1) + highestBlock.Height.ToString().PadRight(8) +
+                             $" BlockStore.Hash: ".PadRight(LoggingConfiguration.ColumnLength - 1) + highestBlock.HashBlock;
+
+                log.AppendLine(logString);
             }
         }
 
-        /// <inheritdoc />
-        public void AddFeatureStats(StringBuilder benchLog)
+        public override Task InitializeAsync()
         {
-            this.blockStoreQueue.ShowStats(benchLog);
-        }
+            // Use ProvenHeadersBlockStoreBehavior for PoS Networks
+            if (this.network.Consensus.IsProofOfStake)
+            {
+                this.connectionManager.Parameters.TemplateBehaviors.Add(new ProvenHeadersBlockStoreBehavior(this.network, this.chain, this.chainState, this.loggerFactory, this.consensusManager));
+            }
+            else
+            {
+                this.connectionManager.Parameters.TemplateBehaviors.Add(new BlockStoreBehavior(this.chain, this.chainState, this.loggerFactory, this.consensusManager));
+            }
 
-        public override void Initialize()
-        {
-            this.logger.LogTrace("()");
-
-            this.connectionManager.Parameters.TemplateBehaviors.Add(this.BlockStoreBehaviorFactory());
-
-            // signal to peers that this node can serve blocks
+            // Signal to peers that this node can serve blocks.
             this.connectionManager.Parameters.Services = (this.storeSettings.Prune ? NetworkPeerServices.Nothing : NetworkPeerServices.Network) | NetworkPeerServices.NODE_WITNESS;
 
             this.signals.SubscribeForBlocksConnected(this.blockStoreSignaled);
 
-            this.blockRepository.InitializeAsync().GetAwaiter().GetResult();
-            this.blockStoreQueue.InitializeAsync().GetAwaiter().GetResult();
-
-            this.logger.LogTrace("(-)");
-        }
-
-        /// <summary>
-        /// Prints command-line help.
-        /// </summary>
-        /// <param name="network">The network to extract values from.</param>
-        public static void PrintHelp(Network network)
-        {
-            StoreSettings.PrintHelp();
-        }
-
-        /// <summary>
-        /// Get the default configuration.
-        /// </summary>
-        /// <param name="builder">The string builder to add the settings to.</param>
-        /// <param name="network">The network to base the defaults off.</param>
-        public static void BuildDefaultConfigurationFile(StringBuilder builder, Network network)
-        {
-            StoreSettings.BuildDefaultConfigurationFile(builder, network);
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc />
         public override void Dispose()
         {
-            this.logger.LogInformation("Stopping {0}...", this.name);
+            this.logger.LogInformation("Stopping BlockStore.");
 
             this.blockStoreSignaled.Dispose();
-            this.blockStoreManager.BlockStoreQueue.Dispose();
-            this.blockRepository.Dispose();
         }
     }
 
@@ -172,13 +129,12 @@ namespace Stratis.Bitcoin.Features.BlockStore
                 .AddFeature<BlockStoreFeature>()
                 .FeatureServices(services =>
                     {
+                        services.AddSingleton<IBlockStoreQueue, BlockStoreQueue>().AddSingleton<IBlockStore>(provider => provider.GetService<IBlockStoreQueue>());
                         services.AddSingleton<IBlockRepository, BlockRepository>();
-                        services.AddSingleton<IBlockStoreCache, BlockStoreCache>();
-                        services.AddSingleton<BlockStoreQueue>().AddSingleton<IBlockStore, BlockStoreQueue>(provider => provider.GetService<BlockStoreQueue>());
-                        services.AddSingleton<BlockStoreManager>();
                         services.AddSingleton<BlockStoreSignaled>();
                         services.AddSingleton<StoreSettings>();
                         services.AddSingleton<BlockStoreController>();
+                        services.AddSingleton<IBlockStoreQueueFlushCondition, BlockStoreQueueFlushCondition>();
                     });
             });
 
