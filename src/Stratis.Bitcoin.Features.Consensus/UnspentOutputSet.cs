@@ -46,6 +46,7 @@ namespace Stratis.Bitcoin.Features.Consensus
                 foreach (TxIn input in transaction.Inputs)
                 {
                     UnspentOutputs c = this.AccessCoins(input.PrevOut.Hash);
+
                     c.Spend(input.PrevOut.N);
                 }
             }
@@ -59,7 +60,9 @@ namespace Stratis.Bitcoin.Features.Consensus
             foreach (UnspentOutputs coin in coins)
             {
                 if (coin != null)
+                {
                     this.unspents.Add(coin.TransactionId, coin);
+                }
             }
         }
 
@@ -73,7 +76,7 @@ namespace Stratis.Bitcoin.Features.Consensus
             }
         }
 
-        public IEnumerable<UnspentOutputs> GetCoins(ICoinView utxo)
+        public IList<UnspentOutputs> GetCoins(ICoinView utxo)
         {
             return this.unspents.Select(u => u.Value).ToList();
         }

@@ -24,6 +24,14 @@ namespace Stratis.Bitcoin.Connection
         void BanAndDisconnectPeer(IPEndPoint endpoint, int banTimeSeconds, string reason = null);
 
         /// <summary>
+        /// Bans and disconnects the peer using the connection manager's default ban interval.
+        /// This allows features to depend solely on the peer banning interface and not the connection manager directly.
+        /// </summary>
+        /// <param name="endpoint">The endpoint to set that it was banned.</param>
+        /// <param name="reason">An optional reason for the ban, the 'reason' is only use for tracing.</param>
+        void BanAndDisconnectPeer(IPEndPoint endpoint, string reason = null);
+
+        /// <summary>
         /// Check if a peer is banned.
         /// </summary>
         /// <param name="endpoint">The endpoint to check if it was banned.</param>
@@ -61,7 +69,6 @@ namespace Stratis.Bitcoin.Connection
         public void BanAndDisconnectPeer(IPEndPoint endpoint, int banTimeSeconds, string reason = null)
         {
             Guard.NotNull(endpoint, nameof(endpoint));
-            this.logger.LogTrace("({0}:'{1}',{2}:'{3}')", nameof(endpoint), endpoint, nameof(reason), reason);
 
             reason = reason ?? "unknown";
 
@@ -94,16 +101,18 @@ namespace Stratis.Bitcoin.Connection
             peerAddress.BanReason = reason;
 
             this.logger.LogDebug("Peer '{0}' banned for reason '{1}', until {2}.", endpoint, reason, peerAddress.BanUntil.ToString());
+        }
 
-            this.logger.LogTrace("(-)");
+        /// <inheritdoc />
+        public void BanAndDisconnectPeer(IPEndPoint endpoint, string reason = null)
+        {
+            this.BanAndDisconnectPeer(endpoint, this.connectionManager.ConnectionSettings.BanTimeSeconds, reason);
         }
 
         /// <inheritdoc />
         public bool IsBanned(IPEndPoint endpoint)
         {
             Guard.NotNull(endpoint, nameof(endpoint));
-
-            this.logger.LogTrace("({0}:'{1}')", nameof(endpoint), endpoint);
 
             PeerAddress peerAddress = this.peerAddressManager.FindPeer(endpoint);
 
@@ -112,8 +121,6 @@ namespace Stratis.Bitcoin.Connection
                 this.logger.LogTrace("(-)[PEERNOTFOUND]");
                 return false;
             }
-
-            this.logger.LogTrace("(-)");
 
             return peerAddress.BanUntil > this.dateTimeProvider.GetUtcNow();
         }

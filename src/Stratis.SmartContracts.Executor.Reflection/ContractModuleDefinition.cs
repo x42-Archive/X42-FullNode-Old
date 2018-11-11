@@ -4,6 +4,7 @@ using System.Linq;
 using Mono.Cecil;
 using Stratis.ModuleValidation.Net;
 using Stratis.SmartContracts.Core.Validation;
+using Stratis.SmartContracts.Executor.Reflection.ILRewrite;
 using Stratis.SmartContracts.Executor.Reflection.Loader;
 
 namespace Stratis.SmartContracts.Executor.Reflection
@@ -49,15 +50,10 @@ namespace Stratis.SmartContracts.Executor.Reflection
         /// <inheritdoc />
         public ModuleDefinition ModuleDefinition { get; private set; }
 
-        /// <summary>
-        /// Rewrites the smart contract constructor of the <see cref="ModuleDefinition"/> to include opcodes for measuring gas consumption.
-        /// </summary>
-        /// <remarks>
-        /// TODO - Make this a generic 'rewrite' method and pass in a rewriter.
-        /// </remarks>
-        public void InjectConstructorGas()
+        /// <inheritdoc />
+        public void Rewrite(IILRewriter rewriter)
         {
-            this.ModuleDefinition = SmartContractGasInjector.AddGasCalculationToConstructor(this.ModuleDefinition, this.ContractType.Name);
+            this.ModuleDefinition = rewriter.Rewrite(this.ModuleDefinition);
         }
 
         /// <inheritdoc />
@@ -77,15 +73,13 @@ namespace Stratis.SmartContracts.Executor.Reflection
             return validator.Validate(this.ModuleDefinition);
         }
 
-        /// <summary>
-        /// Rewrites the <see cref="ModuleDefinition"/> on the type with this name to include opcodes for measuring gas consumption.
-        /// </summary>
-        /// <remarks>
-        /// TODO - Make this a generic 'rewrite' method and pass in a rewriter.
-        /// </remarks>
-        public void InjectMethodGas(string typeName, MethodCall methodCall)
+        public string GetPropertyGetterMethodName(string typeName, string propertyName)
         {
-            this.ModuleDefinition = SmartContractGasInjector.AddGasCalculationToContractMethod(this.ModuleDefinition, typeName, methodCall.Name);
+            return this.DevelopedTypes
+                       .FirstOrDefault(t => t.Name == typeName)
+                       ?.Properties
+                       .FirstOrDefault(p => p.Name == propertyName)
+                       ?.GetMethod.Name;
         }
 
         public void Dispose()

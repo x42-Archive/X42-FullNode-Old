@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DBreeze;
@@ -37,14 +38,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         /// <summary>Performance counter to measure performance of the database insert and query operations.</summary>
         private readonly BackendPerformanceCounter performanceCounter;
 
-        /// <summary>Performance counter to measure performance of the database insert and query operations.</summary>
-        public BackendPerformanceCounter PerformanceCounter
-        {
-            get { return this.performanceCounter; }
-        }
-
-        /// <summary>Provider of time functions.</summary>
-        protected readonly IDateTimeProvider dateTimeProvider;
+        private BackendPerformanceSnapshot latestPerformanceSnapShot;
 
         /// <summary>
         /// Initializes a new instance of the object.
@@ -53,8 +47,8 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         /// <param name="dataFolder">Information about path locations to important folders and files on disk.</param>
         /// <param name="dateTimeProvider">Provider of time functions.</param>
         /// <param name="loggerFactory">Factory to be used to create logger for the puller.</param>
-        public DBreezeCoinView(Network network, DataFolder dataFolder, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory)
-            : this(network, dataFolder.CoinViewPath, dateTimeProvider, loggerFactory)
+        public DBreezeCoinView(Network network, DataFolder dataFolder, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory, INodeStats nodeStats)
+            : this(network, dataFolder.CoinViewPath, dateTimeProvider, loggerFactory, nodeStats)
         {
         }
 
@@ -65,7 +59,7 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         /// <param name="folder">Path to the folder with coinview database files.</param>
         /// <param name="dateTimeProvider">Provider of time functions.</param>
         /// <param name="loggerFactory">Factory to be used to create logger for the puller.</param>
-        public DBreezeCoinView(Network network, string folder, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory)
+        public DBreezeCoinView(Network network, string folder, IDateTimeProvider dateTimeProvider, ILoggerFactory loggerFactory, INodeStats nodeStats)
         {
             Guard.NotNull(network, nameof(network));
             Guard.NotEmpty(folder, nameof(folder));
@@ -76,8 +70,9 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.dbreeze = new DBreezeEngine(folder);
             this.network = network;
-            this.dateTimeProvider = dateTimeProvider;
-            this.performanceCounter = new BackendPerformanceCounter(this.dateTimeProvider);
+            this.performanceCounter = new BackendPerformanceCounter(dateTimeProvider);
+
+            nodeStats.RegisterStats(this.AddBenchStats, StatsType.Benchmark, 400);
         }
 
         /// <summary>
@@ -85,14 +80,10 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         /// </summary>
         public Task InitializeAsync()
         {
-            this.logger.LogTrace("()");
-
             Block genesis = this.network.GetGenesis();
 
             Task task = Task.Run(() =>
             {
-                this.logger.LogTrace("()");
-
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
                     transaction.ValuesLazyLoadingIsOn = false;
@@ -106,11 +97,8 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                         transaction.Commit();
                     }
                 }
-
-                this.logger.LogTrace("(-)");
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
@@ -119,8 +107,6 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         {
             Task<uint256> task = Task.Run(() =>
             {
-                this.logger.LogTrace("()");
-
                 uint256 tipHash;
 
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
@@ -129,7 +115,6 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                     tipHash = this.GetTipHash(transaction);
                 }
 
-                this.logger.LogTrace("(-):'{0}'", tipHash);
                 return tipHash;
             }, cancellationToken);
 
@@ -141,25 +126,26 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         {
             Task<FetchCoinsResponse> task = Task.Run(() =>
             {
-                this.logger.LogTrace("({0}.{1}:{2})", nameof(txIds), nameof(txIds.Length), txIds?.Length);
-
                 FetchCoinsResponse res = null;
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
                     transaction.SynchronizeTables("BlockHash", "Coins");
                     transaction.ValuesLazyLoadingIsOn = false;
 
-                    using (new StopwatchDisposable(o => this.PerformanceCounter.AddQueryTime(o)))
+                    using (new StopwatchDisposable(o => this.performanceCounter.AddQueryTime(o)))
                     {
                         uint256 blockHash = this.GetTipHash(transaction);
                         var result = new UnspentOutputs[txIds.Length];
-                        this.PerformanceCounter.AddQueriedEntities(txIds.Length);
+                        this.performanceCounter.AddQueriedEntities(txIds.Length);
 
                         int i = 0;
                         foreach (uint256 input in txIds)
                         {
                             Row<byte[], Coins> row = transaction.Select<byte[], Coins>("Coins", input.ToBytes(false));
                             UnspentOutputs outputs = row.Exists ? new UnspentOutputs(input, row.Value) : null;
+
+                            this.logger.LogTrace("Outputs for '{0}' were {1}.", input, outputs == null ? "NOT loaded" : "loaded");
+
                             result[i++] = outputs;
                         }
 
@@ -167,7 +153,6 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                     }
                 }
 
-                this.logger.LogTrace("(-):*.{0}='{1}',*.{2}.{3}={4}", nameof(res.BlockHash), res.BlockHash, nameof(res.UnspentOutputs), nameof(res.UnspentOutputs.Length), res.UnspentOutputs.Length);
                 return res;
             }, cancellationToken);
 
@@ -198,48 +183,29 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         /// <param name="nextBlockHash">Hash of the block to become the new tip.</param>
         private void SetBlockHash(DBreeze.Transactions.Transaction transaction, uint256 nextBlockHash)
         {
-            this.logger.LogTrace("({0}:'{1}')", nameof(nextBlockHash), nextBlockHash);
-
             this.blockHash = nextBlockHash;
             transaction.Insert<byte[], uint256>("BlockHash", blockHashKey, nextBlockHash);
-
-            this.logger.LogTrace("(-)");
         }
 
         /// <inheritdoc />
-        public Task SaveChangesAsync(IEnumerable<UnspentOutputs> unspentOutputs, IEnumerable<TxOut[]> originalOutputs, uint256 oldBlockHash, uint256 nextBlockHash)
+        public Task SaveChangesAsync(IList<UnspentOutputs> unspentOutputs, IEnumerable<TxOut[]> originalOutputs, uint256 oldBlockHash, uint256 nextBlockHash, List<RewindData> rewindDataList = null)
         {
-            this.logger.LogTrace("({0}.Count():{1},{2}.Count():{3},{4}:'{5}',{6}:'{7}')", nameof(unspentOutputs), unspentOutputs?.Count(), nameof(originalOutputs), originalOutputs?.Count(), nameof(oldBlockHash), oldBlockHash, nameof(nextBlockHash), nextBlockHash);
-
-            RewindData rewindData = originalOutputs != null ? new RewindData(oldBlockHash) : null;
-            int insertedEntities = 0;
-
-            List<UnspentOutputs> all = unspentOutputs.ToList();
-            var unspentToOriginal = new Dictionary<uint256, TxOut[]>(all.Count);
-            using (new StopwatchDisposable(o => this.PerformanceCounter.AddInsertTime(o)))
-            {
-                if (originalOutputs != null)
-                {
-                    IEnumerator<TxOut[]> originalEnumerator = originalOutputs.GetEnumerator();
-                    foreach (UnspentOutputs output in all)
-                    {
-                        originalEnumerator.MoveNext();
-                        unspentToOriginal.Add(output.TransactionId, originalEnumerator.Current);
-                    }
-                }
-            }
-
             Task task = Task.Run(() =>
             {
-                this.logger.LogTrace("()");
+                int insertedEntities = 0;
 
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
                     transaction.ValuesLazyLoadingIsOn = false;
                     transaction.SynchronizeTables("BlockHash", "Coins", "Rewind");
+
+                    // Speed can degrade when keys are in random order and, especially, if these keys have high entropy.
+                    // This settings helps with speed, see DBreeze documentations about details.
+                    // We should double check if this settings help in our scenario, or sorting keys and operations is enough.
+                    // Refers to issue #2483. https://github.com/stratisproject/StratisBitcoinFullNode/issues/2483
                     transaction.Technical_SetTable_OverwriteIsNotAllowed("Coins");
 
-                    using (new StopwatchDisposable(o => this.PerformanceCounter.AddInsertTime(o)))
+                    using (new StopwatchDisposable(o => this.performanceCounter.AddInsertTime(o)))
                     {
                         uint256 current = this.GetTipHash(transaction);
                         if (current != oldBlockHash)
@@ -250,49 +216,52 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
 
                         this.SetBlockHash(transaction, nextBlockHash);
 
-                        all.Sort(UnspentOutputsComparer.Instance);
-                        foreach (UnspentOutputs coin in all)
-                        {
-                            this.logger.LogTrace("Outputs of transaction ID '{0}' are {1} and will be {2} to the database.", coin.TransactionId, coin.IsPrunable ? "PRUNABLE" : "NOT PRUNABLE", coin.IsPrunable ? "removed" : "inserted");
-                            if (coin.IsPrunable) transaction.RemoveKey("Coins", coin.TransactionId.ToBytes(false));
-                            else transaction.Insert("Coins", coin.TransactionId.ToBytes(false), coin.ToCoins());
+                        // Here we'll add items to be inserted in a second pass.
+                        List<UnspentOutputs> toInsert = new List<UnspentOutputs>();
 
-                            if (originalOutputs != null)
+                        foreach (var coin in unspentOutputs.OrderBy(utxo => utxo.TransactionId, new UInt256Comparer()))
+                        {
+                            if (coin.IsPrunable)
                             {
-                                TxOut[] original = null;
-                                unspentToOriginal.TryGetValue(coin.TransactionId, out original);
-                                if (original == null)
-                                {
-                                    // This one haven't existed before, if we rewind, delete it.
-                                    rewindData.TransactionsToRemove.Add(coin.TransactionId);
-                                }
-                                else
-                                {
-                                    // We'll need to restore the original outputs.
-                                    UnspentOutputs clone = coin.Clone();
-                                    clone.Outputs = original.ToArray();
-                                    rewindData.OutputsToRestore.Add(clone);
-                                }
+                                this.logger.LogTrace("Outputs of transaction ID '{0}' are prunable and will be removed from the database.", coin.TransactionId);
+                                transaction.RemoveKey("Coins", coin.TransactionId.ToBytes(false));
+                            }
+                            else
+                            {
+                                // Add the item to another list that will be used in the second pass.
+                                // This is for performance reasons: DBreeze is optimized to run the same kind of operations, sorted.
+                                toInsert.Add(coin);
                             }
                         }
 
-                        if (rewindData != null)
+                        for (int i = 0; i < toInsert.Count; i++)
                         {
-                            int nextRewindIndex = this.GetRewindIndex(transaction) + 1;
-                            this.logger.LogTrace("Rewind state #{0} created.", nextRewindIndex);
-                            transaction.Insert("Rewind", nextRewindIndex, rewindData);
+                            var coin = toInsert[i];
+                            this.logger.LogTrace("Outputs of transaction ID '{0}' are NOT PRUNABLE and will be inserted into the database. {1}/{2}.", coin.TransactionId, i, toInsert.Count);
+
+                            transaction.Insert("Coins", coin.TransactionId.ToBytes(false), coin.ToCoins());
                         }
 
-                        insertedEntities += all.Count;
+                        if (rewindDataList != null)
+                        {
+                            int nextRewindIndex = this.GetRewindIndex(transaction) + 1;
+                            foreach (RewindData rewindData in rewindDataList)
+                            {
+                                this.logger.LogTrace("Rewind state #{0} created.", nextRewindIndex);
+
+                                transaction.Insert("Rewind", nextRewindIndex, rewindData);
+                                nextRewindIndex++;
+                            }
+                        }
+
+                        insertedEntities += unspentOutputs.Count;
                         transaction.Commit();
                     }
                 }
 
-                this.PerformanceCounter.AddInsertedEntities(insertedEntities);
-                this.logger.LogTrace("(-)");
+                this.performanceCounter.AddInsertedEntities(insertedEntities);
             });
 
-            this.logger.LogTrace("(-)");
             return task;
         }
 
@@ -315,12 +284,10 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         }
 
         /// <inheritdoc />
-        public Task<uint256> Rewind()
+        public Task<uint256> RewindAsync()
         {
             Task<uint256> task = Task.Run(() =>
             {
-                this.logger.LogTrace("()");
-
                 uint256 res = null;
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
@@ -358,7 +325,6 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                     transaction.Commit();
                 }
 
-                this.logger.LogTrace("(-):'{0}'", res);
                 return res;
             });
 
@@ -373,16 +339,12 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         {
             Task task = Task.Run(() =>
             {
-                this.logger.LogTrace("({0}.Count():{1})", nameof(stakeEntries), stakeEntries.Count());
-
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
                     transaction.SynchronizeTables("Stake");
                     this.PutStakeInternal(transaction, stakeEntries);
                     transaction.Commit();
                 }
-
-                this.logger.LogTrace("(-)");
             });
 
             return task;
@@ -413,8 +375,6 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
         {
             Task task = Task.Run(() =>
             {
-                this.logger.LogTrace("({0}.Count():{1})", nameof(blocklist), blocklist.Count());
-
                 using (DBreeze.Transactions.Transaction transaction = this.dbreeze.GetTransaction())
                 {
                     transaction.SynchronizeTables("Stake");
@@ -431,12 +391,24 @@ namespace Stratis.Bitcoin.Features.Consensus.CoinViews
                             blockStake.InStore = true;
                         }
                     }
-
-                    this.logger.LogTrace("(-)");
                 }
             });
 
             return task;
+        }
+
+        private void AddBenchStats(StringBuilder log)
+        {
+            log.AppendLine("======DBreezeCoinView Bench======");
+
+            BackendPerformanceSnapshot snapShot = this.performanceCounter.Snapshot();
+
+            if (this.latestPerformanceSnapShot == null)
+                log.AppendLine(snapShot.ToString());
+            else
+                log.AppendLine((snapShot - this.latestPerformanceSnapShot).ToString());
+
+            this.latestPerformanceSnapShot = snapShot;
         }
 
         /// <inheritdoc />

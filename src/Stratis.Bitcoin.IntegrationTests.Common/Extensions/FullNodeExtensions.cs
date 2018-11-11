@@ -1,12 +1,12 @@
-﻿using NBitcoin;
+﻿using System.Linq;
+using NBitcoin;
 using Stratis.Bitcoin.Base;
-using Stratis.Bitcoin.Features.BlockStore;
-using Stratis.Bitcoin.Features.Consensus;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Features.Consensus.CoinViews;
-using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.MemoryPool;
 using Stratis.Bitcoin.Features.Wallet;
 using Stratis.Bitcoin.Features.Wallet.Interfaces;
+using Stratis.Bitcoin.Interfaces;
 
 namespace Stratis.Bitcoin.IntegrationTests.Common
 {
@@ -22,9 +22,9 @@ namespace Stratis.Bitcoin.IntegrationTests.Common
             return fullNode.NodeService<IWalletTransactionHandler>() as WalletTransactionHandler;
         }
 
-        public static ConsensusLoop ConsensusLoop(this FullNode fullNode)
+        public static IConsensusManager ConsensusManager(this FullNode fullNode)
         {
-            return fullNode.NodeService<IConsensusLoop>() as ConsensusLoop;
+            return fullNode.NodeService<IConsensusManager>() as IConsensusManager;
         }
 
         public static ICoinView CoinView(this FullNode fullNode)
@@ -37,14 +37,22 @@ namespace Stratis.Bitcoin.IntegrationTests.Common
             return fullNode.NodeService<MempoolManager>();
         }
 
-        public static BlockStoreManager BlockStoreManager(this FullNode fullNode)
+        public static IBlockStore BlockStore(this FullNode fullNode)
         {
-            return fullNode.NodeService<BlockStoreManager>();
+            return fullNode.NodeService<IBlockStore>();
         }
 
         public static ChainedHeader GetBlockStoreTip(this FullNode fullNode)
         {
             return fullNode.NodeService<IChainState>().BlockStoreTip;
+        }
+
+        public static HdAddress GetUnusedAddress(this WalletManager walletManager)
+        {
+            var wallet = walletManager.Wallets.First();
+            var walletAccount = wallet.AccountsRoot.First().Accounts.First();
+            var walletAccountReference = new WalletAccountReference(wallet.Name, walletAccount.Name);
+            return walletManager.GetUnusedAddress(walletAccountReference);
         }
     }
 }

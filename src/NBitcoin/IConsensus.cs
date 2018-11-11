@@ -48,7 +48,7 @@ namespace NBitcoin
 
         BuriedDeploymentsArray BuriedDeployments { get; }
 
-        BIP9DeploymentsArray BIP9Deployments { get; }
+        IBIP9DeploymentsArray BIP9Deployments { get; }
 
         int SubsidyHalvingInterval { get; }
 
@@ -104,10 +104,17 @@ namespace NBitcoin
         /// </summary>
         ConsensusFactory ConsensusFactory { get; }
 
-        /// <summary>
-        /// Rules specific to the given network.
-        /// </summary>
-        ICollection<IConsensusRule> Rules { get; set; }
+        /// <summary>Group of rules that are used during block header validation specific to the given network.</summary>
+        List<IHeaderValidationConsensusRule> HeaderValidationRules { get; set; }
+
+        /// <summary>Group of rules that are used during block integrity validation specific to the given network.</summary>
+        List<IIntegrityValidationConsensusRule> IntegrityValidationRules { get; set; }
+
+        /// <summary>Group of rules that are used during partial block validation specific to the given network.</summary>
+        List<IPartialValidationConsensusRule> PartialValidationRules { get; set; }
+
+        /// <summary>Group of rules that are used during full validation (connection of a new block) specific to the given network.</summary>
+        List<IFullValidationConsensusRule> FullValidationRules { get; set; }
 
         Money ProofOfStakeRewardAfterSubsidyLimit { get; }
 

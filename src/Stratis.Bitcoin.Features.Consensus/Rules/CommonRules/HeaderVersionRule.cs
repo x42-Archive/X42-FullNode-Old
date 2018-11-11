@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base.Deployments;
 using Stratis.Bitcoin.Consensus.Rules;
-using Stratis.Bitcoin.Utilities;
 
 namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
 {
     /// <summary>A base skeleton class that is implemented by networks to define and verify the version of blocks.</summary>
-    public abstract class HeaderVersionRule : ConsensusRule
+    public abstract class HeaderVersionRule : HeaderValidationConsensusRule
     {
         /// <summary>
         /// Computes what the block version of a newly created block should be, given a previous header and the
@@ -27,9 +23,7 @@ namespace Stratis.Bitcoin.Features.Consensus.Rules.CommonRules
             uint version = ThresholdConditionCache.VersionbitsTopBits;
             var thresholdConditionCache = new ThresholdConditionCache(this.Parent.Network.Consensus);
 
-            IEnumerable<BIP9Deployments> deployments = Enum.GetValues(typeof(BIP9Deployments)).OfType<BIP9Deployments>();
-
-            foreach (BIP9Deployments deployment in deployments)
+            for (int deployment = 0; deployment < thresholdConditionCache.ArraySize; deployment++)
             {
                 ThresholdState state = thresholdConditionCache.GetState(prevChainedHeader, deployment);
                 if ((state == ThresholdState.LockedIn) || (state == ThresholdState.Started))

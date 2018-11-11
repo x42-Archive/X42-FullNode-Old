@@ -15,18 +15,18 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         {
             var header = this.network.Consensus.ConsensusFactory.CreateBlockHeader();
 
-            this.ruleContext.ValidationContext.ChainedHeader = new ChainedHeader(header, header.GetHash(), 0);
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate = new ChainedHeader(header, header.GetHash(), 0);
         }
 
         [Fact]
         public async Task RunAsync_HeaderTimestampTooNew_WithoutReducedDrift_ThrowsBlockTimestampTooFarConsensusErrorAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork + 1;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork + 1;
 
-            ConsensusErrorException exception = await Assert.ThrowsAsync<ConsensusErrorException>(() => this.consensusRules.RegisterRule<PosFutureDriftRule>().RunAsync(this.ruleContext));
+            ConsensusErrorException exception = Assert.Throws<ConsensusErrorException>(() => this.consensusRules.RegisterRule<PosFutureDriftRule>().Run(this.ruleContext));
 
             Assert.Equal(ConsensusErrors.BlockTimestampTooFar, exception.ConsensusError);
         }
@@ -34,12 +34,12 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         [Fact]
         public async Task RunAsync_HeaderTimestampTooNew_WithReducedDrift_ThrowsBlockTimestampTooFarConsensusErrorAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork + 1;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork + 1;
 
-            ConsensusErrorException exception = await Assert.ThrowsAsync<ConsensusErrorException>(() => this.consensusRules.RegisterRule<PosFutureDriftRule>().RunAsync(this.ruleContext));
+            ConsensusErrorException exception = Assert.Throws<ConsensusErrorException>(() => this.consensusRules.RegisterRule<PosFutureDriftRule>().Run(this.ruleContext));
 
             Assert.Equal(ConsensusErrors.BlockTimestampTooFar.Message, exception.ConsensusError.Message);
         }
@@ -47,45 +47,45 @@ namespace Stratis.Bitcoin.Features.Consensus.Tests.Rules.CommonRules
         [Fact]
         public async Task RunAsync_HeaderTimestampSameAsFutureDriftLimit_WithoutReducedDrift_DoesNotThrowExceptionAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork;
 
-            await this.consensusRules.RegisterRule<StratisBigFixPosFutureDriftRule>().RunAsync(this.ruleContext);
+            this.consensusRules.RegisterRule<StratisBugFixPosFutureDriftRule>().Run(this.ruleContext);
         }
 
         [Fact]
         public async Task RunAsync_HeaderTimestampSameAsFutureDriftLimit_WithReducedDrift_DoesNotThrowExceptionAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork;
 
-            await this.consensusRules.RegisterRule<StratisBigFixPosFutureDriftRule>().RunAsync(this.ruleContext);
+            this.consensusRules.RegisterRule<StratisBugFixPosFutureDriftRule>().Run(this.ruleContext);
         }
 
         [Fact]
         public async Task RunAsync_HeaderTimestampBelowFutureDriftLimit_WithoutReducedDrift_DoesNotThrowExceptionAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp - 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork - 1;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = ((uint)futureDriftTimestamp) + MaxFutureDriftBeforeHardFork - 1;
 
-            await this.consensusRules.RegisterRule<StratisBigFixPosFutureDriftRule>().RunAsync(this.ruleContext);
+            this.consensusRules.RegisterRule<StratisBugFixPosFutureDriftRule>().Run(this.ruleContext);
         }
 
         [Fact]
         public async Task RunAsync_HeaderTimestampBelowFutureDriftLimit_WithReducedDrift_DoesNotThrowExceptionAsync()
         {
-            long futureDriftTimestamp = (StratisBigFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
+            long futureDriftTimestamp = (StratisBugFixPosFutureDriftRule.DriftingBugFixTimestamp + 100);
             this.dateTimeProvider.Setup(d => d.GetAdjustedTimeAsUnixTimestamp())
                 .Returns(futureDriftTimestamp);
-            this.ruleContext.ValidationContext.ChainedHeader.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork - 1;
+            this.ruleContext.ValidationContext.ChainedHeaderToValidate.Header.Time = (uint)futureDriftTimestamp + MaxFutureDriftAfterHardFork - 1;
 
-            await this.consensusRules.RegisterRule<StratisBigFixPosFutureDriftRule>().RunAsync(this.ruleContext);
+            this.consensusRules.RegisterRule<StratisBugFixPosFutureDriftRule>().Run(this.ruleContext);
         }
     }
 }

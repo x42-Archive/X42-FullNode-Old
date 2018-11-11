@@ -6,9 +6,9 @@ using Microsoft.Extensions.Logging;
 using NBitcoin;
 using Stratis.Bitcoin.Base;
 using Stratis.Bitcoin.Configuration;
+using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Controllers;
 using Stratis.Bitcoin.Controllers.Models;
-using Stratis.Bitcoin.Features.Consensus.Interfaces;
 using Stratis.Bitcoin.Features.RPC.Models;
 using Stratis.Bitcoin.Interfaces;
 using Stratis.Bitcoin.Utilities;
@@ -36,9 +36,6 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
         /// <summary>An interface implementation used to retrieve the network difficulty target.</summary>
         private readonly INetworkDifficulty networkDifficulty;
 
-        /// <summary>Manager of the longest fully validated chain of blocks.</summary>
-        private readonly IConsensusLoop consensusLoop;
-
         /// <summary>An interface implementation for the blockstore.</summary>
         private readonly IBlockStore blockStore;
 
@@ -48,13 +45,13 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
             IPooledGetUnspentTransaction pooledGetUnspentTransaction = null,
             IGetUnspentTransaction getUnspentTransaction = null,
             INetworkDifficulty networkDifficulty = null,
-            IConsensusLoop consensusLoop = null,
             IFullNode fullNode = null,
             NodeSettings nodeSettings = null,
             Network network = null,
             ConcurrentChain chain = null,
             IChainState chainState = null,
             Connection.IConnectionManager connectionManager = null,
+            IConsensusManager consensusManager = null,
             IBlockStore blockStore = null)
             : base(
                   fullNode: fullNode,
@@ -62,14 +59,14 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
                   network: network,
                   chain: chain,
                   chainState: chainState,
-                  connectionManager: connectionManager)
+                  connectionManager: connectionManager,
+                  consensusManager: consensusManager)
         {
             this.logger = loggerFactory.CreateLogger(this.GetType().FullName);
             this.pooledTransaction = pooledTransaction;
             this.pooledGetUnspentTransaction = pooledGetUnspentTransaction;
             this.getUnspentTransaction = getUnspentTransaction;
             this.networkDifficulty = networkDifficulty;
-            this.consensusLoop = consensusLoop;
             this.blockStore = blockStore;
         }
 
@@ -82,7 +79,7 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
         {
             if (this.FullNode != null)
             {
-                this.FullNode.Dispose();
+                this.FullNode.NodeLifetime.StopApplication();
                 this.FullNode = null;
             }
 
@@ -109,7 +106,7 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
 
             if (trx == null)
             {
-                trx = this.blockStore != null ? await this.blockStore.GetTrxAsync(trxid) : null;
+                trx = this.blockStore != null ? await this.blockStore.GetTransactionByIdAsync(trxid) : null;
             }
 
             if (trx == null)
@@ -122,6 +119,25 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
             }
             else
                 return new TransactionBriefModel(trx);
+        }
+
+        /// <summary>
+        /// Decodes a transaction from its raw hexadecimal format.
+        /// </summary>
+        /// <param name="hex">The raw transaction hex.</param>
+        /// <returns>A <see cref="TransactionVerboseModel"/> or <c>null</c> if the transaction could not be decoded.</returns>
+        [ActionName("decoderawtransaction")]
+        [ActionDescription("Decodes a serialized transaction hex string into a JSON object describing the transaction.")]
+        public TransactionModel DecodeRawTransaction(string hex)
+        {
+            try
+            {
+                return new TransactionVerboseModel(this.FullNode.Network.CreateTransaction(hex), this.Network);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -157,14 +173,14 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
         }
 
         /// <summary>
-        /// Implements the getblockcount RPC call. 
+        /// Implements the getblockcount RPC call.
         /// </summary>
         /// <returns>The current consensus tip height.</returns>
         [ActionName("getblockcount")]
         [ActionDescription("Gets the current consensus tip height.")]
         public int GetBlockCount()
         {
-            return this.consensusLoop?.Tip.Height ?? -1;
+            return this.ConsensusManager?.Tip.Height ?? -1;
         }
 
         /// <summary>
@@ -273,11 +289,30 @@ namespace Stratis.Bitcoin.Features.RPC.Controllers
             return res;
         }
 
+        /// <summary>
+        /// RPC method for returning a block.
+        /// Supports Json format by default, and optionally raw (hex) format by supplying <c>false</c> to <see cref="isJsonFormat"/>.
+        /// </summary>
+        /// <param name="blockHash">Hash of block to find.</param>
+        /// <param name="isJsonFormat">Whether to output in raw format or in Json format.</param>
+        /// <returns>The block according to format specified in <see cref="isJsonFormat"/></returns>
+        [ActionName("getblock")]
+        [ActionDescription("Returns the block in hex, given a block hash.")]
+        public async Task<object> GetBlockAsync(string blockHash, bool isJsonFormat = true)
+        {
+            Block block = this.blockStore != null ? await this.blockStore.GetBlockAsync(uint256.Parse(blockHash)).ConfigureAwait(false) : null;
+
+            if (!isJsonFormat)
+                return block;
+
+            return new BlockModel(block, this.Chain);
+        }
+
         private async Task<ChainedHeader> GetTransactionBlockAsync(uint256 trxid)
         {
             ChainedHeader block = null;
 
-            uint256 blockid = this.blockStore != null ? await this.blockStore.GetTrxBlockIdAsync(trxid) : null;
+            uint256 blockid = this.blockStore != null ? await this.blockStore.GetBlockIdByTransactionIdAsync(trxid) : null;
             if (blockid != null)
                 block = this.Chain?.GetBlock(blockid);
 

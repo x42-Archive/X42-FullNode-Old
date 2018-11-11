@@ -67,16 +67,16 @@ namespace NBitcoin
             this.nonce = 0;
         }
 
-        public static BlockHeader Load(byte[] hex, Network network)
+        public static BlockHeader Load(byte[] bytes, Network network)
         {
-            if (hex == null)
-                throw new ArgumentNullException(nameof(hex));
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
 
             if (network == null)
                 throw new ArgumentNullException(nameof(network));
 
             BlockHeader blockHeader = network.Consensus.ConsensusFactory.CreateBlockHeader();
-            blockHeader.ReadWrite(hex, network.Consensus.ConsensusFactory);
+            blockHeader.ReadWrite(bytes, network.Consensus.ConsensusFactory);
 
             return blockHeader;
         }
@@ -95,8 +95,19 @@ namespace NBitcoin
 
         #endregion
 
+        /// <summary>Populates stream with items that will be used during hash calculation.</summary>
+        protected virtual void ReadWriteHashingStream(BitcoinStream stream)
+        {
+            stream.ReadWrite(ref this.version);
+            stream.ReadWrite(ref this.hashPrevBlock);
+            stream.ReadWrite(ref this.hashMerkleRoot);
+            stream.ReadWrite(ref this.time);
+            stream.ReadWrite(ref this.bits);
+            stream.ReadWrite(ref this.nonce);
+        }
+
         /// <summary>
-        /// Generates the hash of a <see cref="BlockHeader"/>.
+        /// Generates the hash of a <see cref="BlockHeader"/> or uses cached one.
         /// </summary>
         /// <returns>A hash.</returns>
         public virtual uint256 GetHash()
@@ -112,7 +123,7 @@ namespace NBitcoin
 
             using (var hs = new HashStream())
             {
-                this.ReadWrite(new BitcoinStream(hs, true));
+                this.ReadWriteHashingStream(new BitcoinStream(hs, true));
                 hash = hs.GetHash();
             }
 
@@ -163,6 +174,7 @@ namespace NBitcoin
             return this.GetPoWHash() <= this.Bits.ToUInt256();
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return this.GetHash().ToString();

@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using NBitcoin;
 using Stratis.Bitcoin.Consensus;
 using Stratis.Bitcoin.Consensus.Rules;
-using Stratis.Bitcoin.Features.SmartContracts.Consensus.Rules;
 using Stratis.Bitcoin.Features.SmartContracts.Networks;
+using Stratis.Bitcoin.Features.SmartContracts.Rules;
 using Stratis.SmartContracts.Core;
 using Xunit;
 
@@ -25,11 +25,11 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
             TestRulesContext testContext = TestRulesContextFactory.CreateAsync(this.network);
             OpSpendRule rule = testContext.CreateRule<OpSpendRule>();
 
-            var context = new RuleContext(new ValidationContext(), this.network.Consensus, testContext.Chain.Tip, testContext.DateTimeProvider.GetTimeOffset());
+            var context = new RuleContext(new ValidationContext(), testContext.DateTimeProvider.GetTimeOffset());
 
-            context.ValidationContext.Block = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
-            context.ValidationContext.Block.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
-            context.ValidationContext.Block.Transactions = new List<Transaction>
+            context.ValidationContext.BlockToValidate = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
+            context.ValidationContext.BlockToValidate.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
+            context.ValidationContext.BlockToValidate.Transactions = new List<Transaction>
             {
                 new Transaction()
                 {
@@ -56,10 +56,10 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
             TestRulesContext testContext = TestRulesContextFactory.CreateAsync(this.network);
             OpSpendRule rule = testContext.CreateRule<OpSpendRule>();
 
-            var context = new RuleContext(new ValidationContext(), this.network.Consensus, testContext.Chain.Tip, testContext.DateTimeProvider.GetTimeOffset());
-            context.ValidationContext.Block = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
-            context.ValidationContext.Block.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
-            context.ValidationContext.Block.Transactions = new List<Transaction>
+            var context = new RuleContext(new ValidationContext(), testContext.DateTimeProvider.GetTimeOffset());
+            context.ValidationContext.BlockToValidate = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
+            context.ValidationContext.BlockToValidate.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
+            context.ValidationContext.BlockToValidate.Transactions = new List<Transaction>
             {
                 new Transaction()
                 {
@@ -79,10 +79,10 @@ namespace Stratis.Bitcoin.Features.SmartContracts.Tests.Consensus.Rules
             TestRulesContext testContext = TestRulesContextFactory.CreateAsync(this.network);
             OpSpendRule rule = testContext.CreateRule<OpSpendRule>();
 
-            var context = new RuleContext(new ValidationContext(), this.network.Consensus, testContext.Chain.Tip, testContext.DateTimeProvider.GetTimeOffset());
-            context.ValidationContext.Block = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
-            context.ValidationContext.Block.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
-            context.ValidationContext.Block.Transactions = new List<Transaction>
+            var context = new RuleContext(new ValidationContext(), testContext.DateTimeProvider.GetTimeOffset());
+            context.ValidationContext.BlockToValidate = testContext.Network.Consensus.ConsensusFactory.CreateBlock();
+            context.ValidationContext.BlockToValidate.Header.HashPrevBlock = testContext.Chain.Tip.HashBlock;
+            context.ValidationContext.BlockToValidate.Transactions = new List<Transaction>
             {
                 new Transaction()
                 {
