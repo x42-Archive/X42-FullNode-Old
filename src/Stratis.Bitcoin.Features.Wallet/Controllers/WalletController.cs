@@ -278,7 +278,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     request.CreationDate);
 
                 this.SyncFromBestHeightForRecoveredWallets(request.CreationDate);
-                
+
                 return this.Ok();
             }
             catch (WalletException e)
@@ -320,6 +320,15 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
             try
             {
                 Wallet wallet = this.walletManager.GetWallet(request.Name);
+                int highestChainTipFromPeers = 0;
+                try
+                {
+                    highestChainTipFromPeers = this.connectionManager?.ConnectedPeers?.Max(a => a.Behavior<Bitcoin.Consensus.ConsensusManagerBehavior>().ExpectedPeerTip.Height) ?? 0;
+                }
+                catch (Exception)
+                {
+                    highestChainTipFromPeers = this.chain.Tip.Height;
+                }
 
                 var model = new WalletGeneralInfoModel
                 {
@@ -327,7 +336,7 @@ namespace Stratis.Bitcoin.Features.Wallet.Controllers
                     CreationTime = wallet.CreationTime,
                     LastBlockSyncedHeight = wallet.AccountsRoot.Single(a => a.CoinType == this.coinType).LastBlockSyncedHeight,
                     ConnectedNodes = this.connectionManager.ConnectedPeers.Count(),
-                    ChainTip = this.chain.Tip.Height,
+                    ChainTip = highestChainTipFromPeers,
                     IsChainSynced = this.chain.IsDownloaded(),
                     IsDecrypted = true
                 };

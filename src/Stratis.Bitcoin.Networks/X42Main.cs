@@ -134,6 +134,7 @@ namespace Stratis.Bitcoin.Networks
                 { 2, new CheckpointInfo(new uint256("0x1a64847f52fce72763a9eaa99bed6a896556917cd16f491bbdec070b40514282"), new uint256("0xa55d7663540264e7ed1e7195ecd0050303187eaf9485edeec70806491b5a53d1")) }, // Premine
                 { 523, new CheckpointInfo(new uint256("0x1ca01c02f5989a198433cbe83e0eb26d9166d6aaaa9c20d6b765d5bace7829f1"), new uint256("0xbf04ecd478d78d302aa65293dde85036954b76216b0812104315c8a5ad139525")) }, // Last POW Block
                 { 20000, new CheckpointInfo(new uint256("0x79976dfc025e982239a0bd62099475e6abf839c73aba5805b5cbe4091744c09a"), new uint256("0x250690dd6f264565c5ce16d84d250d67eb940d084c253e4006cdba3091fd66b6")) },
+                { 126570, new CheckpointInfo(new uint256("0x73e016cd46f6ecd261b4bb49d5bf67dbf515fb8fa9a538e1dac61982dc561bad"), new uint256("0x41d564966baadf7acc8a2eaa0411b92671043a97546c8c3eea6748e6d6fa1d9e")) },
             };
 
             var encoder = new Bech32Encoder("bc");
